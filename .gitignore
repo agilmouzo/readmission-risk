@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+# Data and trained artifacts are reproduced by scripts, not committed
+data/raw/*
+!data/raw/.gitkeep
+data/processed/
+models/*
+!models/.gitkeep
