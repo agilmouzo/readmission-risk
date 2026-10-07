@@ -14,7 +14,8 @@ def load_raw(path: Path = config.RAW_CSV) -> pd.DataFrame:
         raise FileNotFoundError(
             f"{path} not found. Run `python scripts/download_data.py` first."
         )
-    return pd.read_csv(path, na_values=[config.MISSING_TOKEN], low_memory=False)
+    return pd.read_csv(
+        path, na_values=[config.MISSING_TOKEN], keep_default_na=False, low_memory=False)
 
 
 def add_binary_target(df: pd.DataFrame) -> pd.DataFrame:

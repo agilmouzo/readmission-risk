@@ -16,3 +16,9 @@ def test_load_raw_replaces_question_marks(tmp_path):
     csv.write_text("race,readmitted\n?,NO\nCaucasian,<30\n")
     df = load_raw(csv)
     assert df["race"].isna().tolist() == [True, False]
+
+def test_load_raw_keeps_none_as_a_value(tmp_path):
+    csv = tmp_path / "d.csv"
+    csv.write_text("A1Cresult,readmitted\nNone,NO\n>8,<30\n")
+    df = load_raw(csv)
+    assert df["A1Cresult"].tolist() == ["None", ">8"]
