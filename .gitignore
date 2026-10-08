@@ -11,3 +11,6 @@ data/raw/*
 data/processed/
 models/*
 !models/.gitkeep
+# Windows download artifacts and archives
+*.zip
+*:Zone.Identifier
