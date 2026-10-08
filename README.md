@@ -20,8 +20,8 @@ pytest
 
 ## Project status
 - [x] Repo skeleton, data download, CI
-- [ ] EDA
-- [ ] Cleaning and features
+- [x] EDA
+- [x] Cleaning and features
 - [ ] Modelling (baseline + LightGBM)
 - [ ] Evaluation (AUC-PR, calibration, threshold, subgroups)
 - [ ] Explainability (SHAP)
