@@ -7,7 +7,7 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 
 from readmission import schema
 
@@ -83,16 +83,21 @@ def prepare(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_preprocessor(
-    numeric: list[str], categorical: list[str], min_frequency: int = 50
+    numeric: list[str],
+    categorical: list[str],
+    min_frequency: int = 50,
+    log_numeric: bool = False,
 ) -> ColumnTransformer:
     """Impute + scale numerics, one-hot encode categoricals.
 
-    Categories with fewer than `min_frequency` rows are pooled into one "infrequent" bucket,
-    and categories never seen in training are mapped to that bucket instead of failing.
+    With `log_numeric=True`, `log1p` is applied before scaling. It tames the right-skewed counts
+    (see the EDA) for linear models; tree models do not need it. All numeric features are >= 0.
     """
-    numeric_pipe = Pipeline(
-        [("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())]
-    )
+    steps = [("impute", SimpleImputer(strategy="median"))]
+    if log_numeric:
+        steps.append(("log", FunctionTransformer(np.log1p, feature_names_out="one-to-one")))
+    steps.append(("scale", StandardScaler()))
+    numeric_pipe = Pipeline(steps)
     categorical_enc = OneHotEncoder(
         handle_unknown="infrequent_if_exist",
         min_frequency=min_frequency,
