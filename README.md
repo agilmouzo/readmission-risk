@@ -22,7 +22,7 @@ pytest
 - [x] Repo skeleton, data download, CI
 - [x] EDA
 - [x] Cleaning and features
-- [ ] Modelling (baseline + LightGBM)
+- [x] Modelling (baseline + LightGBM)
 - [ ] Evaluation (AUC-PR, calibration, threshold, subgroups)
 - [ ] Explainability (SHAP)
 - [ ] API (FastAPI) + Docker
