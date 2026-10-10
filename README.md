@@ -57,6 +57,7 @@ corresponds to about 20% of those patients being readmitted.
 have too few cases to conclude anything. Discrimination is clearly lower in patients aged 80+
 (0.632) than under 40 (0.777). Full tables and figures are in `reports/`.
 
+![Precision-recall curve](reports/figures/pr_curve.png)
 ![Calibration](reports/figures/calibration.png)
 ![Risk deciles](reports/figures/risk_deciles.png)
 ![AUC-ROC by subgroup](reports/figures/subgroup_auc.png)
