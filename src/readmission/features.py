@@ -45,9 +45,7 @@ def icd9_group(code: object) -> str:
 def get_feature_columns(df: pd.DataFrame) -> tuple[list[str], list[str]]:
     """Return (numeric, categorical) feature columns, excluding IDs, targets and sensitive data."""
     numeric = [c for c in schema.NUMERIC_FEATURES if c in df.columns]
-    categorical = [
-        c for c in df.columns if c not in numeric and c not in schema.NON_FEATURE_COLS
-    ]
+    categorical = [c for c in df.columns if c not in numeric and c not in schema.NON_FEATURE_COLS]
     return numeric, categorical
 
 

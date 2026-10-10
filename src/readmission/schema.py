@@ -48,15 +48,15 @@ LOW_INFO_COLS = [
 
 # Never used as model features.
 NON_FEATURE_COLS = [
-    "encounter_id",   # row identifier
-    "patient_nbr",    # used only to split by patient
-    "weight",         # ~97% missing
-    "race",           # sensitive: subgroup analysis only
-    "age",            # replaced by age_ord
-    "diag_1",         # replaced by diag_N_group
+    "encounter_id",  # row identifier
+    "patient_nbr",  # used only to split by patient
+    "weight",  # ~97% missing
+    "race",  # sensitive: subgroup analysis only
+    "age",  # replaced by age_ord
+    "diag_1",  # replaced by diag_N_group
     "diag_2",
     "diag_3",
-    "readmitted",     # raw target: using it as a feature would be leakage
-    "readmitted_30d", # binary target
+    "readmitted",  # raw target: using it as a feature would be leakage
+    "readmitted_30d",  # binary target
     *LOW_INFO_COLS,
 ]

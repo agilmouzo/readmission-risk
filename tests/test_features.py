@@ -46,10 +46,9 @@ def test_prepare_caps_and_prior_visits(raw_df):
     out = prepare(raw_df)
     assert out["number_inpatient"].max() <= schema.CAPS["number_inpatient"]
     assert out["number_diagnoses"].max() <= schema.CAPS["number_diagnoses"]
-    expected = (
-        raw_df.loc[out.index, ["number_outpatient", "number_emergency", "number_inpatient"]]
-        .sum(axis=1)
-    )
+    expected = raw_df.loc[
+        out.index, ["number_outpatient", "number_emergency", "number_inpatient"]
+    ].sum(axis=1)
     pd.testing.assert_series_equal(out["prior_visits"], expected, check_names=False)
 
 
@@ -64,8 +63,15 @@ def test_prepare_keeps_patient_and_race_but_they_are_not_features(raw_df):
     numeric, categorical = get_feature_columns(out)
     assert config.GROUP_COL in out.columns and "race" in out.columns
     features = set(numeric) | set(categorical)
-    for banned in ["patient_nbr", "race", "encounter_id", "weight", "examide",
-                   config.TARGET, config.TARGET_RAW]:
+    for banned in [
+        "patient_nbr",
+        "race",
+        "encounter_id",
+        "weight",
+        "examide",
+        config.TARGET,
+        config.TARGET_RAW,
+    ]:
         assert banned not in features
 
 

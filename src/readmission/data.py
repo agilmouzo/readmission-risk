@@ -11,11 +11,10 @@ from readmission import config
 def load_raw(path: Path = config.RAW_CSV) -> pd.DataFrame:
     """Load the raw CSV, turning the '?' placeholder into proper NaN."""
     if not path.exists():
-        raise FileNotFoundError(
-            f"{path} not found. Run `python scripts/download_data.py` first."
-        )
+        raise FileNotFoundError(f"{path} not found. Run `python scripts/download_data.py` first.")
     return pd.read_csv(
-        path, na_values=[config.MISSING_TOKEN], keep_default_na=False, low_memory=False)
+        path, na_values=[config.MISSING_TOKEN], keep_default_na=False, low_memory=False
+    )
 
 
 def add_binary_target(df: pd.DataFrame) -> pd.DataFrame:
