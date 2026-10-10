@@ -173,11 +173,29 @@ def test_subgroup_report_labels_missing_and_flags_small_groups():
     assert by_group["n"].to_dict() == {"A": n_a, "C": n_c, "Unknown": n_b}
 
 
+def test_subgroup_gaps_ignores_small_groups():
+    report = pd.DataFrame(
+        {
+            "variable": ["v", "v", "v"],
+            "group": ["a", "b", "c"],
+            "n": [5000, 3000, 400],
+            "reliable": [True, True, True],
+            "auc_roc": [0.70, 0.66, 0.90],
+            "recall": [0.50, 0.45, 0.10],
+        }
+    )
+    gaps = ev.subgroup_gaps(report).iloc[0]
+    assert gaps["groups"] == 2
+    assert gaps["auc_roc_gap"] == pytest.approx(0.04)
+    assert ev.subgroup_gaps(report, min_n=5000).empty
+
+
 def test_subgroup_gaps_ignores_unreliable_groups():
     report = pd.DataFrame(
         {
             "variable": ["v", "v", "v"],
             "group": ["a", "b", "c"],
+            "n": [5000, 3000, 5000],
             "reliable": [True, True, False],
             "auc_roc": [0.70, 0.64, 0.10],
             "recall": [0.50, 0.40, 0.99],

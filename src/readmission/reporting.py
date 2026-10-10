@@ -116,11 +116,11 @@ def _plot_pr_curve(result: EvaluationResult, plt):
     ax.plot(recall, precision, color=SERIES, linewidth=2)
     ax.axhline(prevalence, color=REFERENCE, linewidth=1.2)
     ax.text(
-        0.99,
-        prevalence + 0.008,
+        0.01,
+        prevalence - 0.008,
         f"No model: {prevalence:.1%}",
-        ha="right",
-        va="bottom",
+        ha="left",
+        va="top",
         color=INK_2,
         fontsize=9,
     )

@@ -331,11 +331,20 @@ def subgroup_report(
 
 
 def subgroup_gaps(
-    report: pd.DataFrame, columns: Sequence[str] = ("auc_roc", "recall")
+    report: pd.DataFrame,
+    columns: Sequence[str] = ("auc_roc", "recall"),
+    min_n: int = 1000,
 ) -> pd.DataFrame:
-    """Largest difference between reliable groups of each variable, for each metric."""
+    """Largest difference between groups of each variable, for each metric.
+
+    Only reliable groups with at least `min_n` patients are compared: in small groups the metrics
+    move a lot by chance, and the "gap" would mostly measure noise.
+    """
     rows = []
-    for variable, sub in report[report["reliable"]].groupby("variable"):
+    comparable = report[report["reliable"] & (report["n"] >= min_n)]
+    for variable, sub in comparable.groupby("variable"):
+        if len(sub) < 2:
+            continue
         row = {"variable": variable, "groups": len(sub)}
         for column in columns:
             row[f"{column}_gap"] = sub[column].max() - sub[column].min()

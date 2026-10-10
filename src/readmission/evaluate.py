@@ -138,7 +138,7 @@ def print_summary(result: EvaluationResult) -> None:
     print(result.subgroups.to_string(index=False))
     gaps = subgroup_gaps(result.subgroups)
     if not gaps.empty:
-        print("\nLargest gap between reliable subgroups:")
+        print("\nLargest gap between subgroups with at least 1,000 patients:")
         print(gaps.to_string(index=False))
 
 
