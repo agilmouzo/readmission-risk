@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -10,6 +11,7 @@ from readmission.modeling import (
     make_dummy,
     make_lgbm,
     make_patient_cv,
+    out_of_fold_predictions,
 )
 
 
@@ -58,3 +60,15 @@ def test_cross_validate_by_patient_returns_one_row_per_fold(xy):
     assert len(scores) == 3
     assert set(scores.columns) == {"auc_pr", "auc_roc", "brier"}
     assert scores["auc_roc"].between(0, 1).all()
+
+
+def test_out_of_fold_predictions_cover_every_row_once(xy):
+    X, y, groups, numeric, categorical = xy
+    model = make_baseline(numeric, categorical)
+    oof = out_of_fold_predictions(model, X, y, groups, n_splits=3)
+    assert len(oof) == len(X)
+    assert oof.index.equals(X.index)
+    assert oof.between(0, 1).all()
+    # not the same thing as predicting with a model fitted on every row
+    in_sample = model.fit(X, y).predict_proba(X)[:, 1]
+    assert not np.allclose(oof.to_numpy(), in_sample)

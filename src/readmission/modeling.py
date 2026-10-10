@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import re
 
+import numpy as np
 import pandas as pd
 from lightgbm import LGBMClassifier
+from sklearn.base import clone
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedGroupKFold, cross_validate
@@ -101,3 +103,20 @@ def summarise_scores(name: str, scores: pd.DataFrame) -> dict[str, float | str]:
         row[f"{metric}_mean"] = scores[metric].mean()
         row[f"{metric}_std"] = scores[metric].std()
     return row
+
+
+def out_of_fold_predictions(
+    model, X: pd.DataFrame, y: pd.Series, groups: pd.Series, n_splits: int = 5
+) -> pd.Series:
+    """Probability of the positive class for every row, from a model that never saw its patient.
+
+    Same patient-level folds as `cross_validate_by_patient`. These predictions are what the
+    decision threshold is chosen on, so that the test set plays no part in that choice.
+    """
+    oof = np.full(len(X), np.nan)
+    for train_idx, valid_idx in make_patient_cv(n_splits).split(X, y, groups):
+        fitted = clone(model).fit(X.iloc[train_idx], y.iloc[train_idx])
+        oof[valid_idx] = fitted.predict_proba(X.iloc[valid_idx])[:, 1]
+    if np.isnan(oof).any():
+        raise RuntimeError("Some rows were not assigned to any validation fold")
+    return pd.Series(oof, index=X.index, name="oof_proba")

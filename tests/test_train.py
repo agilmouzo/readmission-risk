@@ -3,21 +3,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from readmission import config
-from readmission.features import build_preprocessor, get_feature_columns, prepare
+from readmission.features import build_preprocessor, get_feature_columns
 from readmission.train import compare_models, fit_final, save_results
 
 FAST_LGBM = {"n_estimators": 20, "min_child_samples": 5}
-
-
-@pytest.fixture
-def signal_df(raw_df):
-    """Prepared frame whose target really depends on prior inpatient visits (plus noise)."""
-    df = prepare(raw_df)
-    rng = np.random.default_rng(1)
-    latent = df["number_inpatient"] + rng.normal(0, 1.5, len(df))
-    df[config.TARGET] = (latent > latent.quantile(0.75)).astype(int)
-    return df
 
 
 def test_log_numeric_option_changes_scaling_only_for_numeric(signal_df):

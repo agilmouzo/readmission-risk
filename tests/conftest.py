@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from readmission import config
 from readmission.data import add_binary_target
+from readmission.features import prepare
 
 
 @pytest.fixture
@@ -44,3 +46,13 @@ def raw_df() -> pd.DataFrame:
         }
     )
     return add_binary_target(df)
+
+
+@pytest.fixture
+def signal_df(raw_df) -> pd.DataFrame:
+    """Prepared frame whose target really depends on prior inpatient visits (plus noise)."""
+    df = prepare(raw_df)
+    rng = np.random.default_rng(1)
+    latent = df["number_inpatient"] + rng.normal(0, 1.5, len(df))
+    df[config.TARGET] = (latent > latent.quantile(0.75)).astype(int)
+    return df
