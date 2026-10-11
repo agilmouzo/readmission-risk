@@ -18,6 +18,7 @@ python scripts/download_data.py
 pytest
 python -m readmission.train      # compares models with patient-level CV, saves models/model.joblib
 python -m readmission.evaluate   # opens the test set ONCE; writes tables and figures to reports/
+python -m readmission.explain    # SHAP explanations on a sample of the training set
 ```
 
 ## Project status
@@ -26,7 +27,7 @@ python -m readmission.evaluate   # opens the test set ONCE; writes tables and fi
 - [x] Cleaning and features
 - [x] Modelling (baseline + LightGBM)
 - [x] Evaluation (AUC-PR, calibration, threshold, subgroups)
-- [ ] Explainability (SHAP)
+- [x] Explainability (SHAP)
 - [ ] API (FastAPI) + Docker
 - [ ] Final README: results, limitations
 
@@ -61,6 +62,24 @@ have too few cases to conclude anything. Discrimination is clearly lower in pati
 ![Calibration](reports/figures/calibration.png)
 ![Risk deciles](reports/figures/risk_deciles.png)
 ![AUC-ROC by subgroup](reports/figures/subgroup_auc.png)
+
+## What the model looks at (SHAP)
+SHAP splits each prediction into one contribution per variable: starting from the average risk
+(10%), every variable pushes the patient's risk up or down. Computed on 5,000 training patients;
+contributions are in log-odds, so only their sign and relative size matter.
+
+- The most influential variable is the **number of previous inpatient stays** (20% of the total
+  average impact), followed by the **discharge destination** (17%) and the **total number of
+  prior visits** (9%). Inpatient stays are part of that total, so prior hospital use as a whole
+  weighs about 29%.
+- Risk grows steadily with the number of previous inpatient stays and with the number of
+  diagnoses, and is higher from the age of 60.
+- These are associations learned from data, not causes. The insurance type (`payer_code`, 5%) is
+  also used by the model and may act as a proxy for socioeconomic status.
+
+![Most influential variables](reports/figures/shap_importance.png)
+![Effect of the main numeric variables](reports/figures/shap_numeric.png)
+![Two example patients](reports/figures/shap_patients.png)
 
 ## Design decisions
 - Binary target: readmitted in < 30 days vs. everything else.
