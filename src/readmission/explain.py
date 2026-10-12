@@ -32,6 +32,7 @@ from readmission.data import add_binary_target, load_raw
 from readmission.features import prepare
 from readmission.reporting import (
     _RC,
+    FIGURES_DIR,
     INK,
     INK_2,
     REFERENCE,
@@ -210,9 +211,9 @@ def write_figures(explanation: Explanation, out_dir) -> list:
     paths = []
     with plt.rc_context(_RC):
         for name, draw in {
-            "shap_importance.png": _plot_importance,
-            "shap_patients.png": _plot_patients,
-            "shap_numeric.png": _plot_numeric_effects,
+            "importance.png": _plot_importance,
+            "patients.png": _plot_patients,
+            "numeric.png": _plot_numeric_effects,
         }.items():
             fig = draw(explanation, plt)
             if fig is None:
@@ -346,8 +347,9 @@ def main(argv: list[str] | None = None) -> None:
     print_summary(explanation)
 
     write_tables(explanation, REPORTS_DIR)
-    write_figures(explanation, REPORTS_DIR / "figures")
-    print(f"\nSaved tables to {REPORTS_DIR} and figures to {REPORTS_DIR / 'figures'}")
+    figures_dir = FIGURES_DIR / "shap"
+    write_figures(explanation, figures_dir)
+    print(f"\nSaved tables to {REPORTS_DIR} and figures to {figures_dir}")
 
 
 if __name__ == "__main__":

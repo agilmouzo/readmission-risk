@@ -84,7 +84,7 @@ def test_tables_and_figures_are_written(fitted, tmp_path):
     explanation = ex.explain_sample(artifact, df, n_samples=200)
     assert ex.write_tables(explanation, tmp_path)[0].exists()
     names = {p.name for p in ex.write_figures(explanation, tmp_path / "figs")}
-    assert names == {"shap_importance.png", "shap_patients.png", "shap_numeric.png"}
+    assert names == {"importance.png", "patients.png", "numeric.png"}
 
 
 def test_original_variable_prefers_the_longest_matching_name():

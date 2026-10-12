@@ -12,7 +12,7 @@ it is downloaded by a script.
 
 ## Quickstart
 ```bash
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 python scripts/download_data.py
 pytest
@@ -58,10 +58,10 @@ corresponds to about 20% of those patients being readmitted.
 have too few cases to conclude anything. Discrimination is clearly lower in patients aged 80+
 (0.632) than under 40 (0.777). Full tables and figures are in `reports/`.
 
-![Precision-recall curve](reports/figures/pr_curve.png)
-![Calibration](reports/figures/calibration.png)
-![Risk deciles](reports/figures/risk_deciles.png)
-![AUC-ROC by subgroup](reports/figures/subgroup_auc.png)
+![Precision-recall curve](reports/figures/evaluation/pr_curve.png)
+![Calibration](reports/figures/evaluation/calibration.png)
+![Risk deciles](reports/figures/evaluation/risk_deciles.png)
+![AUC-ROC by subgroup](reports/figures/evaluation/subgroup_auc.png)
 
 ## What the model looks at (SHAP)
 SHAP splits each prediction into one contribution per variable: starting from the average risk
@@ -77,9 +77,9 @@ contributions are in log-odds, so only their sign and relative size matter.
 - These are associations learned from data, not causes. The insurance type (`payer_code`, 5%) is
   also used by the model and may act as a proxy for socioeconomic status.
 
-![Most influential variables](reports/figures/shap_importance.png)
-![Effect of the main numeric variables](reports/figures/shap_numeric.png)
-![Two example patients](reports/figures/shap_patients.png)
+![Most influential variables](reports/figures/shap/importance.png)
+![Effect of the main numeric variables](reports/figures/shap/numeric.png)
+![Two example patients](reports/figures/shap/patients.png)
 
 ## Design decisions
 - Binary target: readmitted in < 30 days vs. everything else.

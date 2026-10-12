@@ -16,6 +16,7 @@ from readmission import config
 from readmission.evaluation import F1_THRESHOLD_NAME, EvaluationResult
 
 REPORTS_DIR = config.ROOT / "reports"
+FIGURES_DIR = REPORTS_DIR / "figures"  # one subfolder per kind: evaluation/, shap/
 
 SURFACE = "#fcfcfb"
 INK = "#0b0b0b"

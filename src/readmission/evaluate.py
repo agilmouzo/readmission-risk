@@ -38,7 +38,7 @@ from readmission.evaluation import (
 )
 from readmission.features import prepare
 from readmission.modeling import make_lgbm, out_of_fold_predictions
-from readmission.reporting import REPORTS_DIR, write_figures, write_tables
+from readmission.reporting import FIGURES_DIR, REPORTS_DIR, write_figures, write_tables
 from readmission.split import patient_split
 
 SUBGROUP_VARIABLES = ("race", "gender", "age_band")
@@ -162,8 +162,9 @@ def main(argv: list[str] | None = None) -> None:
     print_summary(result)
 
     write_tables(result, REPORTS_DIR)
-    write_figures(result, REPORTS_DIR / "figures")
-    print(f"\nSaved tables to {REPORTS_DIR} and figures to {REPORTS_DIR / 'figures'}")
+    figures_dir = FIGURES_DIR / "evaluation"
+    write_figures(result, figures_dir)
+    print(f"\nSaved tables to {REPORTS_DIR} and figures to {figures_dir}")
 
 
 if __name__ == "__main__":
