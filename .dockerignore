@@ -1,0 +1,16 @@
+.git
+.github
+.venv
+.pytest_cache
+.ruff_cache
+**/__pycache__
+*.egg-info
+data
+notebooks
+reports
+tests
+scripts
+*.zip
+# the trained model is the one file from models/ that the image needs
+models/*
+!models/model.joblib
