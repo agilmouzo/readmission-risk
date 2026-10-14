@@ -19,6 +19,7 @@ pytest
 python -m readmission.train      # compares models with patient-level CV, saves models/model.joblib
 python -m readmission.evaluate   # opens the test set ONCE; writes tables and figures to reports/
 python -m readmission.explain    # SHAP explanations on a sample of the training set
+uvicorn readmission.api:create_app --factory   # prediction API at http://127.0.0.1:8000/docs
 ```
 
 ## Project status
@@ -28,7 +29,7 @@ python -m readmission.explain    # SHAP explanations on a sample of the training
 - [x] Modelling (baseline + LightGBM)
 - [x] Evaluation (AUC-PR, calibration, threshold, subgroups)
 - [x] Explainability (SHAP)
-- [ ] API (FastAPI) + Docker
+- [x] API (FastAPI) + Docker
 - [ ] Final README: results, limitations
 
 ## Test-set results
@@ -80,6 +81,37 @@ contributions are in log-odds, so only their sign and relative size matter.
 ![Most influential variables](reports/figures/shap/importance.png)
 ![Effect of the main numeric variables](reports/figures/shap/numeric.png)
 ![Two example patients](reports/figures/shap/patients.png)
+
+## Prediction API
+A small FastAPI service scores one patient. It runs the same cleaning (`prepare`) and the same
+column selection as training, so it cannot drift from the model. The input uses the field names of
+the original dataset (age in years instead of a bracket); diagnoses, payer, specialty, lab results
+and medications are optional.
+
+```bash
+python -m readmission.train                     # creates models/model.joblib
+uvicorn readmission.api:create_app --factory    # interactive docs and an example at /docs
+```
+```bash
+curl -s localhost:8000/predict -H "Content-Type: application/json" -d '{
+  "age": 72, "gender": "Female", "admission_type_id": 1, "discharge_disposition_id": 1,
+  "admission_source_id": 7, "time_in_hospital": 4, "num_lab_procedures": 45, "num_procedures": 1,
+  "num_medications": 14, "number_outpatient": 0, "number_emergency": 1, "number_inpatient": 2,
+  "number_diagnoses": 8}'
+# {"readmission_probability": 0.2, "high_risk": true, "threshold": 0.1971}
+```
+`high_risk` means the patient is among the 10% with the highest predicted risk (the cut-off
+evaluated above). Discharges to death or hospice are outside the model's scope and get a clear
+HTTP 422 instead of a probability.
+
+**Docker.** The image only contains what serving needs (no SHAP, no plotting). It copies the
+trained model, so train first; `constraints.txt` pins the library versions the model was saved
+with:
+```bash
+pip freeze | grep -iE '^(numpy|pandas|scikit-learn|scipy|lightgbm|joblib|threadpoolctl|fastapi|uvicorn|starlette|pydantic|pydantic-core|anyio|typing-extensions)==' > constraints.txt
+docker build -t readmission-api .
+docker run --rm -p 8000:8000 readmission-api
+```
 
 ## Design decisions
 - Binary target: readmitted in < 30 days vs. everything else.
