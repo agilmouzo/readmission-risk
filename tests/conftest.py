@@ -56,3 +56,48 @@ def signal_df(raw_df) -> pd.DataFrame:
     latent = df["number_inpatient"] + rng.normal(0, 1.5, len(df))
     df[config.TARGET] = (latent > latent.quantile(0.75)).astype(int)
     return df
+
+
+MEDICATIONS = [
+    "metformin",
+    "repaglinide",
+    "nateglinide",
+    "glimepiride",
+    "glipizide",
+    "glyburide",
+    "pioglitazone",
+    "rosiglitazone",
+    "acarbose",
+    "glyburide-metformin",
+]
+
+
+@pytest.fixture
+def full_raw_df(raw_df) -> pd.DataFrame:
+    """The synthetic raw frame plus the medication columns, like the real dataset."""
+    rng = np.random.default_rng(3)
+    df = raw_df.copy()
+    for drug in MEDICATIONS:
+        df[drug] = rng.choice(["No", "Steady", "Up", "Down"], len(df), p=[0.7, 0.2, 0.05, 0.05])
+    return df
+
+
+@pytest.fixture
+def real_like_artifact(full_raw_df) -> dict:
+    """A model with the same inputs as the real one (10 numeric + 24 categorical)."""
+    from readmission.features import get_feature_columns
+    from readmission.modeling import make_lgbm
+
+    df = prepare(full_raw_df)
+    rng = np.random.default_rng(1)
+    latent = df["number_inpatient"] + rng.normal(0, 1.5, len(df))
+    df[config.TARGET] = (latent > latent.quantile(0.75)).astype(int)
+    numeric, categorical = get_feature_columns(df)
+    model = make_lgbm(numeric, categorical, n_estimators=40, min_child_samples=10)
+    model.fit(df[numeric + categorical], df[config.TARGET])
+    return {
+        "pipeline": model,
+        "numeric": numeric,
+        "categorical": categorical,
+        "target": config.TARGET,
+    }
