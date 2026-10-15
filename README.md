@@ -94,21 +94,50 @@ uvicorn readmission.api:create_app --factory    # interactive docs and an exampl
 ```
 ```bash
 curl -s localhost:8000/predict -H "Content-Type: application/json" -d '{
-  "age": 72, "gender": "Female", "admission_type_id": 1, "discharge_disposition_id": 1,
-  "admission_source_id": 7, "time_in_hospital": 4, "num_lab_procedures": 45, "num_procedures": 1,
-  "num_medications": 14, "number_outpatient": 0, "number_emergency": 1, "number_inpatient": 2,
-  "number_diagnoses": 8}'
-# {"readmission_probability": 0.2, "high_risk": true, "threshold": 0.1971}
+  "age": 72,
+  "gender": "Female",
+  "admission_type_id": 1,
+  "discharge_disposition_id": 1,
+  "admission_source_id": 7,
+  "time_in_hospital": 4,
+  "num_lab_procedures": 45,
+  "num_procedures": 1,
+  "num_medications": 14,
+  "number_outpatient": 0,
+  "number_emergency": 1,
+  "number_inpatient": 2,
+  "number_diagnoses": 8,
+  "diag_1": "428",
+  "diag_2": "250",
+  "diag_3": "401",
+  "payer_code": "MC",
+  "medical_specialty": "InternalMedicine",
+  "A1Cresult": ">8",
+  "change": "Ch",
+  "diabetesMed": "Yes",
+  "insulin": "Steady",
+  "metformin": "Steady"
+}'
+```
+```json
+{
+  "readmission_probability": 0.15234210787332797,
+  "high_risk": false,
+  "threshold": 0.1971,
+  "baseline_risk": 0.112,
+  "relative_risk": 1.3601973917261425,
+  "summary": "Estimated 15% chance of readmission within 30 days (1.4x the 11% average); not in the top 10% highest-risk group."
+}
 ```
 `high_risk` means the patient is among the 10% with the highest predicted risk (the cut-off
 evaluated above). Discharges to death or hospice are outside the model's scope and get a clear
 HTTP 422 instead of a probability.
 
 **Docker.** The image only contains what serving needs (no SHAP, no plotting). It copies the
-trained model, so train first; `constraints.txt` pins the library versions the model was saved
-with:
+trained model, so run `python -m readmission.train` first. `constraints.txt` is committed and pins
+the library versions the model was saved with; regenerate it only if you retrain in a new
+environment (`pip freeze | grep -iE '^(numpy|pandas|scikit-learn|scipy|lightgbm|joblib|threadpoolctl|fastapi|uvicorn|starlette|pydantic|pydantic-core|anyio|typing-extensions)==' > constraints.txt`).
 ```bash
-pip freeze | grep -iE '^(numpy|pandas|scikit-learn|scipy|lightgbm|joblib|threadpoolctl|fastapi|uvicorn|starlette|pydantic|pydantic-core|anyio|typing-extensions)==' > constraints.txt
 docker build -t readmission-api .
 docker run --rm -p 8000:8000 readmission-api
 ```

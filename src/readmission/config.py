@@ -19,3 +19,6 @@ SENSITIVE_COLS = ["race"]
 # out-of-fold predictions over the train split (see reports/operating_points.csv, row "top 10%")
 # and is checked against that file in tests/test_api.py.
 HIGH_RISK_THRESHOLD = 0.1971
+
+# Readmission rate in the whole test set, used to put a prediction in context.
+BASELINE_RISK = 0.112

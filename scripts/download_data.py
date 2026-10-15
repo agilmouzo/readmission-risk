@@ -25,8 +25,15 @@ def main() -> None:
         print(f"Already downloaded: {target}")
         return
     print(f"Downloading {URL} ...")
-    with urllib.request.urlopen(URL, timeout=120) as resp:
-        payload = resp.read()
+    try:
+        with urllib.request.urlopen(URL, timeout=120) as resp:
+            payload = resp.read()
+    except OSError as error:
+        raise SystemExit(
+            f"Download failed ({error}).\nDownload the zip manually from "
+            f"https://archive.ics.uci.edu/dataset/296 and extract it into {RAW_DIR} "
+            "(you need diabetic_data.csv and IDS_mapping.csv)."
+        ) from error
     with zipfile.ZipFile(io.BytesIO(payload)) as zf:
         zf.extractall(RAW_DIR)
     print(f"Extracted to {RAW_DIR}: {sorted(p.name for p in RAW_DIR.iterdir())}")

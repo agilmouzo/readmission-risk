@@ -39,6 +39,23 @@ def build_frame(patient: Mapping[str, Any]) -> pd.DataFrame:
     return pd.DataFrame([row])
 
 
+def summarise(probability: float, high_risk: bool) -> str:
+    """One plain-language sentence for the person reading the response."""
+    ratio = probability / config.BASELINE_RISK
+    average = f"{config.BASELINE_RISK:.0%} average"
+    if ratio >= 1.15:
+        comparison = f"{ratio:.1f}x the {average}"
+    elif ratio <= 0.85:
+        comparison = f"{1 / ratio:.1f}x below the {average}"
+    else:
+        comparison = f"close to the {average}"
+    group = "in" if high_risk else "not in"
+    return (
+        f"Estimated {probability:.0%} chance of readmission within 30 days ({comparison}); "
+        f"{group} the top 10% highest-risk group."
+    )
+
+
 def predict_one(
     artifact: dict, patient: Mapping[str, Any], threshold: float = config.HIGH_RISK_THRESHOLD
 ) -> dict[str, Any]:
@@ -49,8 +66,12 @@ def predict_one(
     if frame.empty:  # defensive: `prepare` drops excluded rows
         raise OutOfScopeError("This patient is outside the scope of the model.")
     probability = float(artifact["pipeline"].predict_proba(model_inputs(frame, artifact))[0, 1])
+    high_risk = probability >= threshold
     return {
         "readmission_probability": probability,
-        "high_risk": probability >= threshold,
+        "high_risk": high_risk,
         "threshold": threshold,
+        "baseline_risk": config.BASELINE_RISK,
+        "relative_risk": probability / config.BASELINE_RISK,
+        "summary": summarise(probability, high_risk),
     }

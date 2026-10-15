@@ -71,6 +71,52 @@ def test_high_risk_threshold_matches_the_evaluation_report():
     )
 
 
+def test_root_redirects_to_the_docs(client):
+    response = client.get("/", follow_redirects=False)
+    assert response.status_code in (302, 307)
+    assert response.headers["location"] == "/docs"
+
+
+def test_every_input_field_is_documented():
+    from readmission.api import PatientInput
+
+    missing = [n for n, f in PatientInput.model_fields.items() if not f.description]
+    assert not missing
+
+
+def test_prediction_comes_with_context(client):
+    body = client.post("/predict", json=EXAMPLE).json()
+    assert body["baseline_risk"] == config.BASELINE_RISK
+    assert body["relative_risk"] == pytest.approx(
+        body["readmission_probability"] / config.BASELINE_RISK
+    )
+    assert "30 days" in body["summary"]
+
+
+@pytest.mark.parametrize(
+    ("probability", "high_risk", "expected"),
+    [
+        (0.30, True, "2.7x the 11% average"),
+        (0.112, False, "close to the 11% average"),
+        (0.05, False, "below the 11% average"),
+    ],
+)
+def test_summary_wording(probability, high_risk, expected):
+    from readmission.service import summarise
+
+    text = summarise(probability, high_risk)
+    assert expected in text
+    assert ("; not in the top" in text) == (not high_risk)
+
+
+def test_codes_endpoint_describes_every_accepted_code(client):
+    body = client.get("/codes").json()
+    assert set(map(int, body["admission_type_id"])) == set(range(1, 9))
+    assert set(map(int, body["discharge_disposition_id"])) == set(range(1, 31))
+    assert body["rejected_discharge_codes"] == sorted(schema.EXCLUDED_DISCHARGE_CODES)
+    assert body["discharge_disposition_id"]["1"] == "Discharged to home"
+
+
 def test_age_bracket():
     assert age_bracket(0) == "[0-10)"
     assert age_bracket(72) == "[70-80)"
