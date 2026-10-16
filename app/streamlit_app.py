@@ -9,13 +9,18 @@ It calls the same `predict_one` as the API. Educational project: NOT a clinical 
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import streamlit as st
 
+# Lets the app run from a plain checkout (Streamlit Community Cloud), without `pip install -e .`.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
 from readmission import codes, config, schema
 from readmission.api import EXAMPLE
 from readmission.artifact import load_artifact
+from readmission.model_download import download_model
 from readmission.service import predict_one
 
 DRUGS = ["No", "Steady", "Up", "Down"]
@@ -34,7 +39,11 @@ OTHER_DRUGS = [
 
 @st.cache_resource
 def get_model(path: str) -> dict:
-    return load_artifact(Path(path))
+    """Load the model, downloading it from the GitHub Release the first time."""
+    target = Path(path)
+    if not target.exists():
+        download_model(target)
+    return load_artifact(target)
 
 
 def code_select(label: str, table: dict[int, str], default: int, exclude=()) -> int:
@@ -60,8 +69,11 @@ def main() -> None:
     )
     try:
         artifact = get_model(str(config.MODEL_PATH))
-    except FileNotFoundError:
-        st.error("Model not found. Run `python scripts/download_model.py` and reload this page.")
+    except OSError:
+        st.error(
+            "Could not get the model. Run `python scripts/download_model.py` "
+            "(or train it) and reload this page."
+        )
         st.stop()
 
     left, right = st.columns([3, 2], gap="large")

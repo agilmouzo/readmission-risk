@@ -9,41 +9,23 @@ Usage:  python scripts/download_model.py
 
 from __future__ import annotations
 
-import os
-import urllib.request
-from pathlib import Path
-
-URL = os.environ.get(
-    "READMISSION_MODEL_URL",
-    "https://github.com/agilmouzo/readmission-risk/releases/download/v0.1.0/model.joblib",
-)
-TARGET = Path(
-    os.environ.get(
-        "READMISSION_MODEL_PATH",
-        Path(__file__).resolve().parents[1] / "models" / "model.joblib",
-    )
-)
+from readmission import config
+from readmission.model_download import MODEL_URL, download_model
 
 
 def main() -> None:
-    if TARGET.exists():
-        print(f"Already downloaded: {TARGET}")
+    if config.MODEL_PATH.exists():
+        print(f"Already downloaded: {config.MODEL_PATH}")
         return
-    TARGET.parent.mkdir(parents=True, exist_ok=True)
-    print(f"Downloading {URL} ...")
-    partial = TARGET.with_suffix(".part")
+    print(f"Downloading {MODEL_URL} ...")
     try:
-        with urllib.request.urlopen(URL, timeout=120) as resp, partial.open("wb") as out:
-            while chunk := resp.read(1 << 20):
-                out.write(chunk)
+        path = download_model()
     except OSError as error:
-        partial.unlink(missing_ok=True)
         raise SystemExit(
             f"Download failed ({error}).\nYou can train the model yourself instead: "
             "python scripts/download_data.py && python -m readmission.train"
         ) from error
-    partial.replace(TARGET)
-    print(f"Saved {TARGET} ({TARGET.stat().st_size / 1e6:.1f} MB)")
+    print(f"Saved {path} ({path.stat().st_size / 1e6:.1f} MB)")
 
 
 if __name__ == "__main__":
