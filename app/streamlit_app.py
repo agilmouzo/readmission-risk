@@ -178,13 +178,14 @@ def main() -> None:
         )
         st.progress(min(result["readmission_probability"], 1.0))
         if result["high_risk"]:
-            st.warning("In the 10% of patients with the highest predicted risk.")
+            st.warning("Above the high-risk threshold (about the top 10% in validation).")
         else:
-            st.success("Not in the 10% of patients with the highest predicted risk.")
+            st.success("Below the high-risk threshold (about the top 10% in validation).")
         st.write(result["summary"])
         st.caption(
-            "The model separates patients only modestly (AUC-ROC about 0.68): use it to "
-            "explore, not to decide."
+            "Educational estimate from historical US data (1999-2008). The model separates "
+            "patients only modestly (AUC-ROC about 0.68) and ranks groups better than "
+            "individuals: use it to explore, not to decide."
         )
 
 

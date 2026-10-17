@@ -136,7 +136,9 @@ class PatientInput(BaseModel):
 
 class Prediction(BaseModel):
     readmission_probability: float = Field(description="Predicted probability, 0 to 1")
-    high_risk: bool = Field(description="True if in the 10% of patients with the highest risk")
+    high_risk: bool = Field(
+        description="True if above the high-risk threshold (set in validation to flag about 10%)"
+    )
     threshold: float = Field(description="Probability above which a patient counts as high risk")
     baseline_risk: float = Field(description="Readmission rate of all patients (the reference)")
     relative_risk: float = Field(description="readmission_probability / baseline_risk")

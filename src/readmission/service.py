@@ -49,10 +49,10 @@ def summarise(probability: float, high_risk: bool) -> str:
         comparison = f"{1 / ratio:.1f}x below the {average}"
     else:
         comparison = f"close to the {average}"
-    group = "in" if high_risk else "not in"
+    flag = "above" if high_risk else "below"
     return (
         f"Estimated {probability:.0%} chance of readmission within 30 days ({comparison}); "
-        f"{group} the top 10% highest-risk group."
+        f"{flag} the high-risk threshold."
     )
 
 

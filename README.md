@@ -15,7 +15,7 @@ the first load after a period of inactivity can take a minute.)
 ## In short
 - **Question:** given what is known when a diabetic patient leaves hospital, how likely is a
   readmission within 30 days?
-- **Data:** [Diabetes 130-US Hospitals (1999–2008)](https://archive.ics.uci.edu/dataset/296):
+- **Data:** [Diabetes 130-US Hospitals (1999–2008)](https://archive.ics.uci.edu/dataset/296), from the UCI Machine Learning Repository (a public archive of datasets run by the University of California, Irvine):
   101,766 hospital stays from 71,518 patients.
 - **Model:** gradient-boosted trees (LightGBM), compared with a logistic regression baseline
   using cross-validation that never splits a patient across folds.
@@ -118,7 +118,8 @@ flags (80%) are false alarms.
 Calibration is good (slope 1.06, expected calibration error 0.007): a predicted 20% risk
 corresponds to about 20% of those patients being readmitted.
 
-**Subgroups.** No meaningful difference by gender or between the two large race groups
+**Subgroups.** (An AUC gap alone does not prove unfair treatment or its absence; with few
+cases the uncertainty is large.) No meaningful difference by gender or between the two large race groups
 (African American AUC-ROC 0.667 vs. Caucasian 0.675, overlapping intervals); smaller race groups
 have too few cases to conclude anything. Discrimination is clearly lower in patients aged 80+
 (0.632) than under 40 (0.777). Full tables are in `reports/`.
@@ -186,11 +187,12 @@ curl -s localhost:8000/predict -H "Content-Type: application/json" -d '{
   "threshold": 0.1971,
   "baseline_risk": 0.112,
   "relative_risk": 1.3601973917261425,
-  "summary": "Estimated 15% chance of readmission within 30 days (1.4x the 11% average); not in the top 10% highest-risk group."
+  "summary": "Estimated 15% chance of readmission within 30 days (1.4x the 11% average); below the high-risk threshold."
 }
 ```
-`high_risk` means the patient is among the 10% with the highest predicted risk (the cut-off
-evaluated above). Discharges to death or hospice are outside the model's scope and get a clear
+`high_risk` means the predicted probability is above the high-risk threshold. That threshold
+(0.1971) was set on training-set validation predictions so that it flags about 10% of patients; on
+the test set it flags 9.7%, and on a different population it could flag a different share. Discharges to death or hospice are outside the model's scope and get a clear
 HTTP 422 instead of a probability.
 
 **Docker.** The image only contains what serving needs (no SHAP, no plotting). It copies the
@@ -217,6 +219,12 @@ docker run --rm -p 8000:8000 readmission-api     # docs at http://127.0.0.1:8000
   have changed, and the model has no validity for other health systems, including Spain's.
 - **Modest predictive power.** AUC-ROC is 0.68. Most readmissions are not flagged, and most
   flags are false alarms. It ranks groups of patients better than it predicts individuals.
+- **What "readmission" means here.** The target is a readmission recorded within 30 days in this
+  dataset. The data cannot tell whether it was planned, avoidable or related to the care received.
+- **Not validated outside this dataset.** The split by patient avoids leakage between the same
+  person's stays, but train and test come from the same US hospitals and years. There is no
+  temporal validation and no test on external hospitals; a natural next step if suitable data
+  were available.
 - **Predicts at discharge.** It uses information available when the patient leaves, so it cannot
   be used earlier in the stay.
 - **Fairness.** Leaving `race` out does not remove proxies: `payer_code` and the medical

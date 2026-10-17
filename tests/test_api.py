@@ -106,7 +106,8 @@ def test_summary_wording(probability, high_risk, expected):
 
     text = summarise(probability, high_risk)
     assert expected in text
-    assert ("; not in the top" in text) == (not high_risk)
+    assert ("; above the high-risk threshold" in text) == high_risk
+    assert ("; below the high-risk threshold" in text) == (not high_risk)
 
 
 def test_codes_endpoint_describes_every_accepted_code(client):
