@@ -30,15 +30,9 @@ from readmission import config
 from readmission.artifact import load_artifact, model_inputs
 from readmission.data import add_binary_target, load_raw
 from readmission.features import prepare
-from readmission.reporting import (
-    _RC,
-    FIGURES_DIR,
-    INK,
-    INK_2,
-    REFERENCE,
-    REPORTS_DIR,
-    SERIES,
-)
+from readmission.labels import value_label, variable_label
+from readmission.plotstyle import INK, INK_2, RC, REFERENCE, SERIES
+from readmission.reporting import FIGURES_DIR, REPORTS_DIR
 from readmission.split import patient_split
 
 DEFAULT_SAMPLE = 5000
@@ -209,7 +203,7 @@ def write_figures(explanation: Explanation, out_dir) -> list:
 
     out_dir.mkdir(parents=True, exist_ok=True)
     paths = []
-    with plt.rc_context(_RC):
+    with plt.rc_context(RC):
         for name, draw in {
             "importance.png": _plot_importance,
             "patients.png": _plot_patients,
@@ -235,10 +229,16 @@ def _plot_importance(explanation: Explanation, plt):
     for pos, value, share in zip(positions, table["mean_abs_shap"], table["share"], strict=True):
         ax.text(value + offset, pos, f"{share:.0%}", va="center", color=INK_2, fontsize=8.5)
     ax.set_yticks(positions)
-    ax.set_yticklabels(table.index)
+    ax.set_yticklabels([variable_label(v) for v in table.index])
     ax.grid(axis="y", visible=False)
     ax.set_xlabel("Average impact on the prediction (mean |SHAP|, log-odds)")
-    ax.set_title(f"Which variables move the risk most (top {len(table)})")
+    fig.suptitle(
+        f"Which variables move the risk most (top {len(table)})",
+        x=0.01,
+        ha="left",
+        fontweight="bold",
+        color=INK,
+    )
     ax.set_xlim(0, table["mean_abs_shap"].max() * 1.15)
     return fig
 
@@ -258,7 +258,7 @@ def _plot_patients(explanation: Explanation, plt):
         ax.barh(positions, table["contribution"], height=0.6, color=colours)
         ax.axvline(0, color=INK_2, linewidth=0.8)
         names = [
-            f"{v} = {val}" if val != "" else str(v)
+            f"{variable_label(v)} = {value_label(v, val)}" if val != "" else variable_label(v)
             for v, val in zip(table["variable"], table["value"], strict=True)
         ]
         ax.set_yticks(positions)
@@ -279,10 +279,11 @@ def _plot_patients(explanation: Explanation, plt):
             f"{label.capitalize()}: {explanation.probability[row]:.0%} predicted risk",
             fontsize=10.5,
         )
-        ax.set_xlabel("Contribution (log-odds; blue raises risk, grey lowers it)")
+        ax.set_xlabel("Contribution (log-odds)")
     average = 1.0 / (1.0 + np.exp(-explanation.base_value))
     fig.suptitle(
-        f"Two example patients (the average patient is at {average:.0%})",
+        f"Two example patients (the average patient is at {average:.0%}); "
+        "blue raises the risk, grey lowers it",
         x=0.01,
         ha="left",
         fontweight="bold",
@@ -303,14 +304,22 @@ def _plot_numeric_effects(explanation: Explanation, plt):
         effect = effect[effect["size"] >= 30]
         if effect.empty:
             ax.text(0.5, 0.5, "too few patients", ha="center", va="center", color=INK_2)
-            ax.set_title(variable, fontsize=10.5)
+            ax.set_title(variable_label(variable), fontsize=10.5)
             continue
         ax.axhline(0, color=REFERENCE, linewidth=1.0)
         ax.plot(
             effect["value"], effect["mean"], color=SERIES, linewidth=1.8, marker="o", markersize=4
         )
-        ax.set_title(variable, fontsize=10.5)
-        ax.set_xlabel("Value")
+        ax.set_title(variable_label(variable), fontsize=10.5)
+        if variable == "age_ord":  # decade index -> readable age groups
+            ax.set_xticks(effect["value"])
+            ax.set_xticklabels(
+                [value_label(variable, v).replace("under ", "<") for v in effect["value"]],
+                fontsize=8.5,
+            )
+            ax.set_xlabel("Age group")
+        else:
+            ax.set_xlabel("Value")
         ax.set_ylabel("Average contribution (log-odds)")
     for ax in axes.ravel()[len(variables) :]:
         ax.set_visible(False)

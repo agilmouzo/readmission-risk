@@ -14,40 +14,10 @@ import numpy as np
 
 from readmission import config
 from readmission.evaluation import F1_THRESHOLD_NAME, EvaluationResult
+from readmission.plotstyle import INK, INK_2, RC, REFERENCE, SERIES, SURFACE
 
 REPORTS_DIR = config.ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"  # one subfolder per kind: evaluation/, shap/
-
-SURFACE = "#fcfcfb"
-INK = "#0b0b0b"
-INK_2 = "#52514e"
-SERIES = "#2a78d6"
-REFERENCE = "#a5a49f"
-GRID = "#e6e5e0"
-AXIS = "#c9c8c3"
-
-_RC = {
-    "figure.facecolor": SURFACE,
-    "axes.facecolor": SURFACE,
-    "savefig.facecolor": SURFACE,
-    "axes.edgecolor": AXIS,
-    "axes.labelcolor": INK_2,
-    "axes.grid": True,
-    "grid.color": GRID,
-    "grid.linewidth": 0.8,
-    "grid.linestyle": "-",
-    "axes.axisbelow": True,
-    "axes.spines.top": False,
-    "axes.spines.right": False,
-    "xtick.color": INK_2,
-    "ytick.color": INK_2,
-    "text.color": INK,
-    "font.size": 10,
-    "axes.titlesize": 12,
-    "axes.titleweight": "bold",
-    "axes.titlelocation": "left",
-    "axes.titlepad": 12,
-}
 
 
 def write_tables(result: EvaluationResult, out_dir: Path = REPORTS_DIR) -> list[Path]:
@@ -85,7 +55,7 @@ def write_figures(result: EvaluationResult, out_dir: Path) -> list[Path]:
         "subgroup_auc.png": _plot_subgroups,
     }
     paths = []
-    with plt.rc_context(_RC):
+    with plt.rc_context(RC):
         for name, draw in drawers.items():
             fig = draw(result, plt)
             if fig is None:  # nothing reliable to show
