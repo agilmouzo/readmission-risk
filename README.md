@@ -1,39 +1,99 @@
-# Readmission Risk — 30-day hospital readmission for diabetic patients
+# Readmission Risk: 30-day hospital readmission for diabetic patients
+
+[![CI](https://github.com/agilmouzo/readmission-risk/actions/workflows/ci.yml/badge.svg)](https://github.com/agilmouzo/readmission-risk/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Live demo](https://img.shields.io/badge/demo-Streamlit-ff4b4b.svg)](https://agilmou-readmission-risk.streamlit.app/)
 
 > Educational project. **Not a clinical tool.**
 
-End-to-end machine learning project: data exploration, a gradient-boosted model,
-explainability (SHAP), subgroup analysis, and a containerised prediction API.
+**[Try the live demo](https://agilmou-readmission-risk.streamlit.app/)**: fill in one hospital stay and
+see the estimated chance that the patient comes back within 30 days. (It runs on a free tier, so
+the first load after a period of inactivity can take a minute.)
 
-## Dataset
-[Diabetes 130-US Hospitals (1999–2008)](https://archive.ics.uci.edu/dataset/296), UCI Machine
-Learning Repository: ~100k hospital encounters, de-identified. The data is not committed;
-it is downloaded by a script.
+![Streamlit demo](docs/img/demo.png)
 
-## Quickstart
+## In short
+- **Question:** given what is known when a diabetic patient leaves hospital, how likely is a
+  readmission within 30 days?
+- **Data:** [Diabetes 130-US Hospitals (1999–2008)](https://archive.ics.uci.edu/dataset/296):
+  101,766 hospital stays from 71,518 patients.
+- **Model:** gradient-boosted trees (LightGBM), compared with a logistic regression baseline
+  using cross-validation that never splits a patient across folds.
+- **Result, honestly:** the model is useful for *ranking* patients, not for predicting them
+  one by one. The 10% of patients it ranks highest are readmitted **28.5%** of the time, against
+  **11.2%** overall (2.5× more). Overall discrimination is modest (AUC-ROC 0.68).
+- **Delivered as:** reproducible training and evaluation scripts, SHAP explanations, a subgroup
+  analysis, a documented prediction API (FastAPI + Docker) and a web demo (Streamlit).
+- **Quality:** 126 tests, ruff, CI on Python 3.11 and 3.13.
+
+## Try it
+**Online:** the [live demo](https://agilmou-readmission-risk.streamlit.app/).
+
+**On your machine, without training anything** (the trained model is published as a
+[GitHub Release](https://github.com/agilmouzo/readmission-risk/releases)):
 ```bash
+git clone https://github.com/agilmouzo/readmission-risk.git && cd readmission-risk
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-python scripts/download_data.py
-pytest
-python -m readmission.train      # compares models with patient-level CV, saves models/model.joblib
-python -m readmission.evaluate   # opens the test set ONCE; writes tables and figures to reports/
-python -m readmission.explain    # SHAP explanations on a sample of the training set
-uvicorn readmission.api:create_app --factory   # prediction API at http://127.0.0.1:8000/docs
+pip install -e ".[demo]"
+python scripts/download_model.py                 # saves models/model.joblib (under 1 MB)
+streamlit run app/streamlit_app.py               # the web demo
+uvicorn readmission.api:create_app --factory     # or the API, with docs at http://127.0.0.1:8000/docs
 ```
+The API is documented in its own interactive page. Every field has a description and an example is
+pre-filled, so you can try it without knowing the dataset:
 
-## Project status
-- [x] Repo skeleton, data download, CI
-- [x] EDA
-- [x] Cleaning and features
-- [x] Modelling (baseline + LightGBM)
-- [x] Evaluation (AUC-PR, calibration, threshold, subgroups)
-- [x] Explainability (SHAP)
-- [x] API (FastAPI) + Docker
-- [ ] Final README: results, limitations
+![API: request with a ready-made example](docs/img/api-request.png)
+![API: response in plain language](docs/img/api-response.png)
 
-## Test-set results
-Hold-out test set: 19,802 encounters from patients never seen in training. 95% intervals come from
+**Reproduce everything from the raw data:**
+```bash
+pip install -e ".[dev]"
+python scripts/download_data.py                  # downloads the dataset from UCI into data/raw/
+pytest                                           # 126 tests
+python -m readmission.train                      # patient-level CV, saves models/model.joblib
+python -m readmission.evaluate                   # opens the test set ONCE; tables and figures in reports/
+python -m readmission.explain                    # SHAP explanations on a training sample
+```
+If the UCI download is blocked, get the zip from the dataset page and extract it into `data/raw/`.
+
+## How it works
+```mermaid
+flowchart LR
+    A[UCI dataset<br/>101,766 stays] --> B[Cleaning and features<br/>prepare]
+    B --> C[Split by patient<br/>train / test]
+    C --> D[Cross-validation by patient<br/>baseline vs LightGBM]
+    D --> E[models/model.joblib]
+    C --> F[Evaluation on the test set<br/>reports/]
+    E --> F
+    E --> G[SHAP explanations]
+    E --> H[Prediction API<br/>FastAPI + Docker]
+    E --> I[Web demo<br/>Streamlit]
+```
+The API and the demo call the same `prepare` function and the same column selection as training,
+so serving cannot drift from the model.
+
+| Folder | What is in it |
+|---|---|
+| `src/readmission/` | the package: cleaning (`features`), training, evaluation, SHAP, service and API |
+| `notebooks/` | `01_eda` (data exploration) and `02_features` (what the cleaning does) |
+| `reports/` | every result as CSV, plus the figures shown below |
+| `app/` | the Streamlit demo |
+| `scripts/` | download of the data and of the trained model |
+| `tests/` | unit tests, an API-vs-batch equivalence test and a frozen feature contract |
+
+## Results
+### Model comparison (cross-validation on the training set)
+| Model | AUC-ROC | AUC-PR |
+|---|---|---|
+| Always predict the average (reference) | 0.500 | 0.114 |
+| Logistic regression | 0.664 | 0.209 |
+| LightGBM (chosen) | 0.675 | 0.230 |
+
+LightGBM is better, but only by about 0.01 of AUC-ROC over a plain logistic regression. In this
+data the signal is weak, and a more complex model does not change that much.
+
+### Test set
+Hold-out test set: 19,802 stays from patients never seen in training. 95% intervals come from
 resampling patients, not rows.
 
 | Metric | Value (95% CI) |
@@ -44,12 +104,16 @@ resampling patients, not rows.
 | Readmission rate in the 10% highest-risk patients | 28.5% vs. 11.2% overall (lift 2.5×) |
 | Share of all readmissions found in that 10% | 25% (top 30%: 51%) |
 
-Operating points (threshold chosen on out-of-fold predictions over the training set):
+Operating points (thresholds chosen on out-of-fold predictions over the training set):
 
 | Rule | Patients flagged | Precision | Recall |
 |---|---|---|---|
 | Top 10% highest risk (threshold 0.197) | 9.7% | 28.6% | 24.9% |
 | F1-optimal (threshold 0.135) | 26.2% | 20.1% | 47.1% |
+
+In plain words: flagging the top 10% finds about one readmission in four, and about 3 of every 10
+flagged patients really come back. Flagging more patients finds more readmissions (47%) but most
+flags (80%) are false alarms.
 
 Calibration is good (slope 1.06, expected calibration error 0.007): a predicted 20% risk
 corresponds to about 20% of those patients being readmitted.
@@ -57,7 +121,7 @@ corresponds to about 20% of those patients being readmitted.
 **Subgroups.** No meaningful difference by gender or between the two large race groups
 (African American AUC-ROC 0.667 vs. Caucasian 0.675, overlapping intervals); smaller race groups
 have too few cases to conclude anything. Discrimination is clearly lower in patients aged 80+
-(0.632) than under 40 (0.777). Full tables and figures are in `reports/`.
+(0.632) than under 40 (0.777). Full tables are in `reports/`.
 
 ![Precision-recall curve](reports/figures/evaluation/pr_curve.png)
 ![Calibration](reports/figures/evaluation/calibration.png)
@@ -65,8 +129,8 @@ have too few cases to conclude anything. Discrimination is clearly lower in pati
 ![AUC-ROC by subgroup](reports/figures/evaluation/subgroup_auc.png)
 
 ## What the model looks at (SHAP)
-SHAP splits each prediction into one contribution per variable: starting from the average risk
-(10%), every variable pushes the patient's risk up or down. Computed on 5,000 training patients;
+SHAP splits each prediction into one contribution per variable: starting from the average risk,
+every variable pushes the patient's risk up or down. Computed on 5,000 training patients;
 contributions are in log-odds, so only their sign and relative size matter.
 
 - The most influential variable is the **number of previous inpatient stays** (20% of the total
@@ -83,15 +147,11 @@ contributions are in log-odds, so only their sign and relative size matter.
 ![Two example patients](reports/figures/shap/patients.png)
 
 ## Prediction API
-A small FastAPI service scores one patient. It runs the same cleaning (`prepare`) and the same
-column selection as training, so it cannot drift from the model. The input uses the field names of
-the original dataset (age in years instead of a bracket); diagnoses, payer, specialty, lab results
-and medications are optional.
+A small FastAPI service scores one patient. The input uses the field names of the original
+dataset (age in years instead of a bracket); diagnoses, payer, specialty, lab results and
+medications are optional. `GET /codes` lists the meaning of the numeric codes (admission type,
+discharge destination, admission source), and `/docs` has an example ready to run.
 
-```bash
-python -m readmission.train                     # creates models/model.joblib
-uvicorn readmission.api:create_app --factory    # interactive docs and an example at /docs
-```
 ```bash
 curl -s localhost:8000/predict -H "Content-Type: application/json" -d '{
   "age": 72,
@@ -134,18 +194,45 @@ evaluated above). Discharges to death or hospice are outside the model's scope a
 HTTP 422 instead of a probability.
 
 **Docker.** The image only contains what serving needs (no SHAP, no plotting). It copies the
-trained model, so run `python -m readmission.train` first. `constraints.txt` is committed and pins
-the library versions the model was saved with; regenerate it only if you retrain in a new
-environment (`pip freeze | grep -iE '^(numpy|pandas|scikit-learn|scipy|lightgbm|joblib|threadpoolctl|fastapi|uvicorn|starlette|pydantic|pydantic-core|anyio|typing-extensions)==' > constraints.txt`).
+trained model, so get it first with `python scripts/download_model.py` (or train it).
+`constraints.txt` is committed and pins the library versions the model was saved with; regenerate
+it only if you retrain in a new environment.
 ```bash
 docker build -t readmission-api .
-docker run --rm -p 8000:8000 readmission-api
+docker run --rm -p 8000:8000 readmission-api     # docs at http://127.0.0.1:8000/docs
 ```
 
 ## Design decisions
 - Binary target: readmitted in < 30 days vs. everything else.
-- Train/test split **by patient** (`patient_nbr`) to avoid leakage between encounters.
-- `race` is excluded from the features and used only for subgroup performance analysis.
+- Train/test split **by patient** (`patient_nbr`): the same patient can appear in many stays, and a
+  random split would leak them into both sets and inflate the metrics.
+- Death and hospice discharges are excluded: those patients cannot be readmitted.
+- `race` is excluded from the features and used only to compare performance across groups.
+- The test set is opened once, after all choices (model, thresholds) were made with
+  cross-validation on the training set.
+- Metrics suited to a rare outcome (11%): AUC-PR, lift, calibration, instead of accuracy.
 
 ## Limitations
-_To be completed._
+- **Old, US-only data** (1999–2008, 130 US hospitals). Clinical practice, coding and patient mix
+  have changed, and the model has no validity for other health systems, including Spain's.
+- **Modest predictive power.** AUC-ROC is 0.68. Most readmissions are not flagged, and most
+  flags are false alarms. It ranks groups of patients better than it predicts individuals.
+- **Predicts at discharge.** It uses information available when the patient leaves, so it cannot
+  be used earlier in the stay.
+- **Fairness.** Leaving `race` out does not remove proxies: `payer_code` and the medical
+  specialty can carry socioeconomic information. Performance is lower for patients aged 80+.
+- **SHAP shows associations, not causes.** A variable that raises the predicted risk is not
+  necessarily a reason for the readmission.
+- **Not tuned extensively** and based only on the variables of this dataset.
+- **No clinical use.** The API has no authentication or rate limit and is a demonstration, not a
+  hardened service.
+
+## Data and license
+Data: Clore, J., Cios, K., DeShazo, J. and Strack, B. (2014). *Diabetes 130-US Hospitals for Years
+1999-2008*. UCI Machine Learning Repository. https://doi.org/10.24432/C5230J (CC BY 4.0). It is not
+committed to this repository.
+
+Original study: Strack, B. et al. (2014). *Impact of HbA1c Measurement on Hospital Readmission
+Rates: Analysis of 70,000 Clinical Database Patient Records.* BioMed Research International.
+
+Code: [MIT License](LICENSE).
