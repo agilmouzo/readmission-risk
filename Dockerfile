@@ -1,5 +1,5 @@
-# Readmission-risk API. Build it AFTER training (the model file is not in git):
-#   python -m readmission.train
+# Readmission-risk API. Build it AFTER getting the model (the file is not in git):
+#   python scripts/download_model.py     (or train it: python -m readmission.train)
 #   docker build -t readmission-api .
 #   docker run --rm -p 8000:8000 readmission-api
 # Python matches the version the model was trained with; `constraints.txt` pins the libraries,
