@@ -50,3 +50,24 @@ def test_icd9_shape_and_summary():
     assert i18n.summary("en", result) == "english"
     assert "15 %" in i18n.summary("es", result) or "15%" in i18n.summary("es", result)
     assert "por debajo del umbral de alto riesgo" in i18n.summary("es", result)
+
+
+def test_spanish_names_work_even_with_the_raw_dataset_labels(monkeypatch):
+    raw = {1: "Emergency", 5: "Not Available", 6: "NULL"}
+    monkeypatch.setitem(i18n._SPANISH, "admission_type", (raw, i18n._ADMISSION_TYPE_ES))
+    labels = i18n.code_labels("es", "admission_type")
+    assert labels[1] == "Urgencia"
+    assert labels[6] == "Desconocido (figura como 'NULL' en el dataset)"
+    assert labels[5] == "Desconocido (figura como 'Not Available' en el dataset)"
+
+
+def test_every_extra_drug_has_a_spanish_name():
+    import ast
+    from pathlib import Path
+
+    app = Path(__file__).resolve().parents[1] / "app" / "streamlit_app.py"
+    for node in ast.parse(app.read_text()).body:
+        if isinstance(node, ast.Assign) and node.targets[0].id == "OTHER_DRUGS":
+            assert set(ast.literal_eval(node.value)) == set(i18n.DRUGS_ES)
+            return
+    raise AssertionError("OTHER_DRUGS not found")

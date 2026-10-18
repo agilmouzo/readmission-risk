@@ -90,8 +90,10 @@ def code_labels(lang: str, which: str) -> dict[int, str]:
     for code, name in english.items():
         if code in spanish:
             labels[code] = spanish[code]
-        else:  # "Unknown (recorded as 'NULL' in the dataset)"
-            labels[code] = f"Desconocido (figura como '{name.split(chr(39))[1]}' en el dataset)"
+        else:  # "Unknown (recorded as 'NULL' in the dataset)", or the bare "NULL"
+            found = re.search(r"'([^']+)'", name)
+            original = found.group(1) if found else name
+            labels[code] = f"Desconocido (figura como '{original}' en el dataset)"
     return labels
 
 
@@ -158,6 +160,19 @@ PAYERS = {
     "SP": ("Self-pay (no insurance)", "Pago privado (sin seguro)"),
     "UN": ("UN", "UN"),
     "WC": ("WC", "WC"),
+}
+
+# Spanish spelling of the generic names of the diabetes drugs.
+DRUGS_ES = {
+    "repaglinide": "repaglinida",
+    "nateglinide": "nateglinida",
+    "glimepiride": "glimepirida",
+    "glipizide": "glipizida",
+    "glyburide": "gliburida",
+    "pioglitazone": "pioglitazona",
+    "rosiglitazone": "rosiglitazona",
+    "acarbose": "acarbosa",
+    "glyburide-metformin": "gliburida-metformina",
 }
 
 ICD9_GROUPS = {

@@ -260,7 +260,10 @@ def main() -> None:
         with st.expander(text["other_drugs"]):
             for name in OTHER_DRUGS:
                 other[name] = st.selectbox(
-                    name, DRUGS, format_func=lambda v: text[f"drug_{v}"], key=name
+                    i18n.DRUGS_ES[name] if es else name,
+                    DRUGS,
+                    format_func=lambda v: text[f"drug_{v}"],
+                    key=name,
                 )
         with st.expander(text["insurance_title"]):
             payer = st.selectbox(
