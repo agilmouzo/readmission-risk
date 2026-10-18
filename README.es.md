@@ -125,7 +125,10 @@ reingresos, y unos 3 de cada 10 pacientes marcados vuelven de verdad. Marcar má
 más reingresos (47 %), pero la mayoría de las marcas (80 %) son falsas alarmas.
 
 La calibración es buena (pendiente 1,06, error de calibración esperado 0,007): un riesgo predicho
-del 20 % corresponde a que aproximadamente el 20 % de esos pacientes reingrese.
+del 20 % corresponde a que aproximadamente el 20 % de esos pacientes reingrese. Esto vale para el grupo en
+conjunto: no significa que la cifra de un paciente concreto sea igual de precisa. El modelo separa a
+los pacientes solo de forma modesta, así que una estimación individual puede quedar lejos de lo que
+le ocurra a esa persona.
 
 **Subgrupos.** (Una diferencia de AUC por sí sola no demuestra trato injusto ni su ausencia; con pocos
 casos la incertidumbre es grande.) No hay diferencia relevante por género ni entre los dos grupos grandes de raza

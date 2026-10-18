@@ -118,7 +118,9 @@ flagged patients really come back. Flagging more patients finds more readmission
 flags (80%) are false alarms.
 
 Calibration is good (slope 1.06, expected calibration error 0.007): a predicted 20% risk
-corresponds to about 20% of those patients being readmitted.
+corresponds to about 20% of those patients being readmitted. That holds for the group as a
+whole: it does not mean the figure for one patient is equally precise. The model separates
+patients only modestly, so an individual estimate can be far from what happens to that person.
 
 **Subgroups.** (An AUC gap alone does not prove unfair treatment or its absence; with few
 cases the uncertainty is large.) No meaningful difference by gender or between the two large race groups
