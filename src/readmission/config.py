@@ -20,5 +20,8 @@ SENSITIVE_COLS = ["race"]
 # and is checked against that file in tests/test_api.py.
 HIGH_RISK_THRESHOLD = 0.1971
 
+# Tag of the GitHub Release that holds the published model (see model_download.py).
+MODEL_RELEASE = "v0.1.0"
+
 # Readmission rate in the whole test set, used to put a prediction in context.
 BASELINE_RISK = 0.112

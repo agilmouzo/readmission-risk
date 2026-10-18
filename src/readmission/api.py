@@ -10,14 +10,16 @@ Educational project: NOT a clinical tool.
 
 from __future__ import annotations
 
+import hashlib
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from readmission import codes, config, schema
+from readmission import codes, config, model_download, schema
 from readmission.artifact import load_artifact
 from readmission.service import OutOfScopeError, predict_one
 
@@ -148,6 +150,21 @@ class Prediction(BaseModel):
 class Health(BaseModel):
     status: str
     model_loaded: bool
+    model_version: str | None = Field(
+        default=None,
+        description=f"'{config.MODEL_RELEASE}' if it is the published model, 'custom' otherwise",
+    )
+    model_sha256: str | None = Field(
+        default=None, description="SHA-256 of the model file that is loaded"
+    )
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(1 << 20):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def create_app(artifact: dict | None = None) -> FastAPI:
@@ -157,6 +174,7 @@ def create_app(artifact: dict | None = None) -> FastAPI:
     async def lifespan(app: FastAPI):
         if app.state.artifact is None:
             app.state.artifact = load_artifact(config.MODEL_PATH)
+            app.state.model_sha256 = _sha256(config.MODEL_PATH)
         yield
 
     app = FastAPI(
@@ -169,6 +187,7 @@ def create_app(artifact: dict | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.artifact = artifact
+    app.state.model_sha256 = None  # only known when the model is loaded from a file
 
     @app.get("/", include_in_schema=False)
     def root() -> RedirectResponse:
@@ -186,7 +205,16 @@ def create_app(artifact: dict | None = None) -> FastAPI:
 
     @app.get("/health", response_model=Health)
     def health(request: Request) -> Health:
-        return Health(status="ok", model_loaded=request.app.state.artifact is not None)
+        sha = request.app.state.model_sha256
+        published = sha is not None and sha == getattr(model_download, "MODEL_SHA256", None)
+        return Health(
+            status="ok",
+            model_loaded=request.app.state.artifact is not None,
+            model_version=None
+            if sha is None
+            else (config.MODEL_RELEASE if published else "custom"),
+            model_sha256=sha,
+        )
 
     @app.post(
         "/predict",

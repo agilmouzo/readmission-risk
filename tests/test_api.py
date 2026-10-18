@@ -125,7 +125,39 @@ def test_age_bracket():
 
 
 def test_health(client):
-    assert client.get("/health").json() == {"status": "ok", "model_loaded": True}
+    assert client.get("/health").json() == {
+        "status": "ok",
+        "model_loaded": True,
+        "model_version": None,  # the test model is injected, not loaded from a file
+        "model_sha256": None,
+    }
+
+
+def test_health_reports_which_model_file_is_loaded(real_like_artifact, tmp_path, monkeypatch):
+    import hashlib
+
+    import joblib
+    from fastapi.testclient import TestClient
+
+    from readmission import model_download
+    from readmission.api import create_app
+
+    path = tmp_path / "model.joblib"
+    joblib.dump(real_like_artifact, path)
+    monkeypatch.setattr(config, "MODEL_PATH", path)
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    with TestClient(create_app()) as local:
+        body = local.get("/health").json()
+        assert body["model_sha256"] == digest
+        assert body["model_version"] == "custom"
+        monkeypatch.setattr(model_download, "MODEL_SHA256", digest, raising=False)
+        assert local.get("/health").json()["model_version"] == config.MODEL_RELEASE
+
+
+def test_release_tag_matches_the_download_url():
+    from readmission import model_download
+
+    assert f"/download/{config.MODEL_RELEASE}/" in model_download.MODEL_URL
 
 
 def test_predict_returns_a_probability(client):
