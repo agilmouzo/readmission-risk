@@ -87,9 +87,8 @@ entrenamiento, de modo que el servicio no puede desviarse del modelo.
 | `reports/` | todos los resultados en CSV, más las figuras que se muestran abajo |
 | `app/` | la demo de Streamlit |
 | `scripts/` | descarga de los datos y del modelo entrenado |
-| `MODEL_CARD.md` | la [ficha del modelo](MODEL_CARD.md) (en inglés): para qué sirve, sus datos, resultados y límites |
 | `tests/` | tests unitarios, un test de equivalencia API frente a lote y un contrato de variables congelado |
-| `MODEL_CARD.md` | para qué sirve el modelo, qué tal funciona y dónde no debe usarse (en inglés) |
+| `MODEL_CARD.md` | la [ficha del modelo](MODEL_CARD.md) (en inglés): para qué sirve, sus datos, resultados y límites |
 
 ## Resultados
 ### Comparación de modelos (validación cruzada sobre el conjunto de entrenamiento)
