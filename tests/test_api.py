@@ -233,3 +233,15 @@ def test_missing_model_file_fails_with_a_helpful_message(tmp_path, monkeypatch):
     with pytest.raises(FileNotFoundError, match="readmission.train"):
         with TestClient(create_app()):
             pass
+
+
+def test_not_recorded_codes_are_labelled_unknown_exactly_where_the_model_groups_them():
+    from readmission import codes, schema
+
+    for column, table in {
+        "admission_type_id": codes.ADMISSION_TYPE,
+        "discharge_disposition_id": codes.DISCHARGE_DISPOSITION,
+        "admission_source_id": codes.ADMISSION_SOURCE,
+    }.items():
+        labelled = {code for code, name in table.items() if name.startswith("Unknown (")}
+        assert labelled == set(schema.UNKNOWN_CODES[column])

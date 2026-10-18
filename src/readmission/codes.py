@@ -1,7 +1,13 @@
 """Meaning of the numeric codes in the dataset (copied from its IDS_mapping.csv).
 
-Only used to document the API: the model itself receives the numbers.
+Only used to document the API and the demo: the model itself receives the numbers.
+
+The dataset has several labels for "not recorded" ("NULL", "Not Available", "Not Mapped",
+"Unknown/Invalid"). The model groups them all as "Unknown" (see schema.UNKNOWN_CODES), so they are
+shown here with one clear wording that keeps the original label.
 """
+
+_NOT_RECORDED = ("NULL", "Not Available", "Not Mapped", "Unknown/Invalid")
 
 ADMISSION_TYPE: dict[int, str] = {
     1: "Emergency",
@@ -80,3 +86,15 @@ ADMISSION_SOURCE: dict[int, str] = {
     25: "Transfer from Ambulatory Surgery Center",
     26: "Transfer from Hospice",
 }
+
+
+def _readable(table: dict[int, str]) -> dict[int, str]:
+    return {
+        code: f"Unknown (recorded as '{name}' in the dataset)" if name in _NOT_RECORDED else name
+        for code, name in table.items()
+    }
+
+
+ADMISSION_TYPE = _readable(ADMISSION_TYPE)
+DISCHARGE_DISPOSITION = _readable(DISCHARGE_DISPOSITION)
+ADMISSION_SOURCE = _readable(ADMISSION_SOURCE)

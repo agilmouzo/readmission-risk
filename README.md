@@ -1,5 +1,7 @@
 # Readmission Risk: 30-day hospital readmission for diabetic patients
 
+**English** | [Español](README.es.md)
+
 [![CI](https://github.com/agilmouzo/readmission-risk/actions/workflows/ci.yml/badge.svg)](https://github.com/agilmouzo/readmission-risk/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Live demo](https://img.shields.io/badge/demo-Streamlit-ff4b4b.svg)](https://agilmou-readmission-risk.streamlit.app/)
@@ -8,7 +10,7 @@
 
 **[Try the live demo](https://agilmou-readmission-risk.streamlit.app/)**: fill in one hospital stay and
 see the estimated chance that the patient comes back within 30 days. (It runs on a free tier, so
-the first load after a period of inactivity can take a minute.)
+the first load after a period of inactivity can take a minute. It is available in English and Spanish.)
 
 ![Streamlit demo](docs/img/demo.png)
 
@@ -24,7 +26,7 @@ the first load after a period of inactivity can take a minute.)
   **11.2%** overall (2.5× more). Overall discrimination is modest (AUC-ROC 0.68).
 - **Delivered as:** reproducible training and evaluation scripts, SHAP explanations, a subgroup
   analysis, a documented prediction API (FastAPI + Docker) and a web demo (Streamlit).
-- **Quality:** 126 tests, ruff, CI on Python 3.11 and 3.13.
+- **Quality:** 133 tests, ruff, CI on Python 3.11 and 3.13.
 
 ## Try it
 **Online:** the [live demo](https://agilmou-readmission-risk.streamlit.app/).
@@ -49,7 +51,7 @@ pre-filled, so you can try it without knowing the dataset:
 ```bash
 pip install -e ".[dev]"
 python scripts/download_data.py                  # downloads the dataset from UCI into data/raw/
-pytest                                           # 126 tests
+pytest                                           # 133 tests
 python -m readmission.train                      # patient-level CV, saves models/model.joblib
 python -m readmission.evaluate                   # opens the test set ONCE; tables and figures in reports/
 python -m readmission.explain                    # SHAP explanations on a training sample

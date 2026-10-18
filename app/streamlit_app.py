@@ -17,9 +17,10 @@ import streamlit as st
 # Lets the app run from a plain checkout (Streamlit Community Cloud), without `pip install -e .`.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from readmission import codes, config, schema
+from readmission import config, i18n, schema
 from readmission.api import EXAMPLE
 from readmission.artifact import load_artifact
+from readmission.features import icd9_group
 from readmission.model_download import download_model
 from readmission.service import predict_one
 
@@ -46,98 +47,245 @@ def get_model(path: str) -> dict:
     return load_artifact(target)
 
 
-def code_select(label: str, table: dict[int, str], default: int, exclude=()) -> int:
+def code_select(
+    label: str, table: dict[int, str], default: int, key: str, exclude=(), help: str | None = None
+) -> int:
     options = [code for code in table if code not in exclude]
     return st.selectbox(
         label,
         options,
         index=options.index(default),
         format_func=lambda code: f"{code} - {table[code]}",
+        key=key,
+        help=help,
     )
 
 
-def optional_text(label: str, default: str = "", help: str | None = None) -> str | None:
-    return st.text_input(label, value=default, help=help).strip() or None
+def diagnosis_input(label: str, default: str, key: str, help: str, text: dict, lang: str):
+    """ICD-9 box that shows, below it, the broad group the model will use."""
+    value = st.text_input(label, value=default, key=key, help=help).strip()
+    if not value:
+        return None
+    if i18n.looks_like_icd9(value):
+        group = i18n.ICD9_GROUPS[icd9_group(value)][lang == "es"]
+        st.caption(text["diag_group"].format(group=group))
+    else:
+        st.caption(text["diag_bad"])
+    return value
 
 
 def main() -> None:
-    st.set_page_config(page_title="Readmission risk", page_icon=":hospital:", layout="wide")
-    st.title("30-day readmission risk, diabetic patients")
-    st.caption(
-        "Educational project, **not a clinical tool**. Model trained on US hospital data "
-        "(1999-2008); see the repository for its limits."
-    )
+    lang = st.session_state.get("lang", "en")
+    text = i18n.TEXT[lang]
+    st.set_page_config(page_title=text["page_title"], page_icon=":hospital:", layout="wide")
+    title, picker = st.columns([5, 1])
+    with picker:
+        lang = st.radio(
+            i18n.TEXT[lang]["language"],
+            list(i18n.LANGUAGES),
+            format_func=i18n.LANGUAGES.get,
+            horizontal=True,
+            key="lang",
+        )
+    text = i18n.TEXT[lang]
+    es = lang == "es"
+    with title:
+        st.title(text["title"])
+        st.caption(text["caption"])
     try:
         artifact = get_model(str(config.MODEL_PATH))
     except OSError:
-        st.error(
-            "Could not get the model. Run `python scripts/download_model.py` "
-            "(or train it) and reload this page."
-        )
+        st.error(text["model_error"])
         st.stop()
 
     left, right = st.columns([3, 2], gap="large")
     with left:
-        st.subheader("The encounter")
+        st.subheader(text["encounter"])
         a, b = st.columns(2)
-        age = a.number_input("Age (years)", 0, 120, EXAMPLE["age"])
-        gender = b.selectbox("Gender", ["Female", "Male"])
-        admission_type = code_select("How was the patient admitted?", codes.ADMISSION_TYPE, 1)
+        age = a.number_input(text["age"], 0, 120, EXAMPLE["age"], key="age")
+        gender = b.selectbox(
+            text["gender"],
+            ["Female", "Male"],
+            format_func=lambda v: text[f"gender_{v}"],
+            key="gender",
+        )
+        admission_type = code_select(
+            text["admission_type"], i18n.code_labels(lang, "admission_type"), 1, "admission_type"
+        )
         admission_source = code_select(
-            "Where did the patient come from?", codes.ADMISSION_SOURCE, 7
+            text["admission_source"], i18n.code_labels(lang, "source"), 7, "admission_source"
         )
         discharge = code_select(
-            "Where did the patient go after discharge?",
-            codes.DISCHARGE_DISPOSITION,
+            text["discharge"],
+            i18n.code_labels(lang, "discharge"),
             1,
+            "discharge",
             exclude=schema.EXCLUDED_DISCHARGE_CODES,
         )
-        st.caption("Discharges to death or hospice are not offered: the model does not cover them.")
+        st.caption(text["discharge_note"])
 
         c1, c2, c3 = st.columns(3)
-        time_in_hospital = c1.number_input("Days in hospital", 1, 14, EXAMPLE["time_in_hospital"])
-        num_lab = c2.number_input("Lab tests", 0, 200, EXAMPLE["num_lab_procedures"])
-        num_proc = c3.number_input("Procedures", 0, 20, EXAMPLE["num_procedures"])
+        time_in_hospital = c1.number_input(
+            text["days"], 1, 14, EXAMPLE["time_in_hospital"], key="days"
+        )
+        num_lab = c2.number_input(text["labs"], 0, 200, EXAMPLE["num_lab_procedures"], key="labs")
+        num_proc = c3.number_input(
+            text["procedures"], 0, 20, EXAMPLE["num_procedures"], key="procedures"
+        )
         c1, c2, c3 = st.columns(3)
-        num_med = c1.number_input("Medications", 0, 150, EXAMPLE["num_medications"])
-        num_diag = c2.number_input("Diagnoses", 1, 30, EXAMPLE["number_diagnoses"])
+        num_med = c1.number_input(
+            text["medications"], 0, 150, EXAMPLE["num_medications"], key="medications"
+        )
+        num_diag = c2.number_input(
+            text["diagnoses"],
+            1,
+            30,
+            EXAMPLE["number_diagnoses"],
+            key="diagnoses",
+            help=text["diagnoses_help"],
+        )
         c3.empty()
-        st.markdown("**Visits in the previous year**")
+        st.markdown(text["visits"])
         c1, c2, c3 = st.columns(3)
-        outpatient = c1.number_input("Outpatient", 0, 200, EXAMPLE["number_outpatient"])
-        emergency = c2.number_input("Emergency", 0, 200, EXAMPLE["number_emergency"])
-        inpatient = c3.number_input("Inpatient", 0, 200, EXAMPLE["number_inpatient"])
+        outpatient = c1.number_input(
+            text["outpatient"],
+            0,
+            200,
+            EXAMPLE["number_outpatient"],
+            key="outpatient",
+            help=text["outpatient_help"],
+        )
+        emergency = c2.number_input(
+            text["emergency"],
+            0,
+            200,
+            EXAMPLE["number_emergency"],
+            key="emergency",
+            help=text["emergency_help"],
+        )
+        inpatient = c3.number_input(
+            text["inpatient"],
+            0,
+            200,
+            EXAMPLE["number_inpatient"],
+            key="inpatient",
+            help=text["inpatient_help"],
+        )
 
-        st.markdown("**Diagnoses (ICD-9 codes, optional)**")
+        st.markdown(text["diag_title"], help=text["diag_help"])
         c1, c2, c3 = st.columns(3)
         with c1:
-            diag_1 = optional_text("Primary", EXAMPLE["diag_1"])
+            diag_1 = diagnosis_input(
+                text["diag_primary"],
+                EXAMPLE["diag_1"],
+                "diag_1",
+                text["diag_primary_help"],
+                text,
+                lang,
+            )
         with c2:
-            diag_2 = optional_text("Secondary", EXAMPLE["diag_2"])
+            diag_2 = diagnosis_input(
+                text["diag_secondary"],
+                EXAMPLE["diag_2"],
+                "diag_2",
+                text["diag_other_help"],
+                text,
+                lang,
+            )
         with c3:
-            diag_3 = optional_text("Additional", EXAMPLE["diag_3"])
+            diag_3 = diagnosis_input(
+                text["diag_additional"],
+                EXAMPLE["diag_3"],
+                "diag_3",
+                text["diag_other_help"],
+                text,
+                lang,
+            )
 
-        st.markdown("**Tests and diabetes treatment**")
+        st.markdown(text["tests_title"])
         c1, c2 = st.columns(2)
-        a1c = c1.selectbox("HbA1c result", ["None", "Norm", ">7", ">8"], index=3)
-        glucose = c2.selectbox("Glucose serum result", ["None", "Norm", ">200", ">300"])
-        c1, c2 = st.columns(2)
-        diabetes_med = c1.selectbox("Diabetes medication prescribed?", ["Yes", "No"])
-        change = c2.selectbox(
-            "Medication changed during the stay?",
-            ["Ch", "No"],
-            format_func=lambda v: {"Ch": "Yes", "No": "No"}[v],
+        a1c = c1.selectbox(
+            text["a1c"],
+            ["None", "Norm", ">7", ">8"],
+            index=3,
+            format_func=lambda v: {
+                "None": text["not_measured"],
+                "Norm": text["normal"],
+            }.get(v, v),
+            key="a1c",
+            help=text["a1c_help"],
+        )
+        glucose = c2.selectbox(
+            text["glucose"],
+            ["None", "Norm", ">200", ">300"],
+            format_func=lambda v: {
+                "None": text["not_measured"],
+                "Norm": text["normal"],
+            }.get(v, v),
+            key="glucose",
+            help=text["glucose_help"],
         )
         c1, c2 = st.columns(2)
-        insulin = c1.selectbox("Insulin", DRUGS, index=1)
-        metformin = c2.selectbox("Metformin", DRUGS, index=1)
+        diabetes_med = c1.selectbox(
+            text["diabetes_med"],
+            ["Yes", "No"],
+            format_func=lambda v: text[v.lower()],
+            key="diabetes_med",
+        )
+        change = c2.selectbox(
+            text["change"],
+            ["Ch", "No"],
+            format_func=lambda v: {"Ch": text["yes"], "No": text["no"]}[v],
+            key="change",
+            help=text["change_help"],
+        )
+        c1, c2 = st.columns(2)
+        insulin = c1.selectbox(
+            text["insulin"],
+            DRUGS,
+            index=1,
+            format_func=lambda v: text[f"drug_{v}"],
+            key="insulin",
+            help=text["drug_help"],
+        )
+        metformin = c2.selectbox(
+            text["metformin"],
+            DRUGS,
+            index=1,
+            format_func=lambda v: text[f"drug_{v}"],
+            key="metformin",
+            help=text["drug_help"],
+        )
         other = {}
-        with st.expander("Other diabetes drugs"):
+        with st.expander(text["other_drugs"]):
             for name in OTHER_DRUGS:
-                other[name] = st.selectbox(name, DRUGS, key=name)
-        with st.expander("Insurance and specialty (optional)"):
-            payer = optional_text("Payer code (e.g. MC = Medicare)", EXAMPLE["payer_code"])
-            specialty = optional_text("Medical specialty", EXAMPLE["medical_specialty"])
+                other[name] = st.selectbox(
+                    name, DRUGS, format_func=lambda v: text[f"drug_{v}"], key=name
+                )
+        with st.expander(text["insurance_title"]):
+            payer = st.selectbox(
+                text["payer"],
+                [None, *i18n.PAYERS],
+                index=list(i18n.PAYERS).index(EXAMPLE["payer_code"]) + 1,
+                format_func=lambda v: (
+                    text["not_recorded"]
+                    if v is None
+                    else v
+                    if i18n.PAYERS[v][es] == v
+                    else f"{v} - {i18n.PAYERS[v][es]}"
+                ),
+                key="payer",
+                help=text["payer_help"],
+            )
+            names = {value: (en_name, es_name)[es] for value, en_name, es_name in i18n.SPECIALTIES}
+            specialty = st.selectbox(
+                text["specialty"],
+                [None, *names],
+                index=list(names).index(EXAMPLE["medical_specialty"]) + 1,
+                format_func=lambda v: text["not_recorded"] if v is None else names[v],
+                key="specialty",
+                help=text["specialty_help"],
+            )
 
     patient = {
         "age": int(age),
@@ -169,24 +317,25 @@ def main() -> None:
     result = predict_one(artifact, patient)
 
     with right:
-        st.subheader("Result")
+        st.subheader(text["result"])
         st.metric(
-            "Chance of readmission within 30 days",
-            f"{result['readmission_probability']:.1%}",
-            f"{result['relative_risk']:.1f}x the {result['baseline_risk']:.1%} average",
+            text["chance"],
+            i18n.decimal(lang, f"{result['readmission_probability']:.1%}"),
+            i18n.decimal(
+                lang,
+                text["vs_average"].format(
+                    ratio=result["relative_risk"], baseline=result["baseline_risk"]
+                ),
+            ),
             delta_color="off",
         )
         st.progress(min(result["readmission_probability"], 1.0))
         if result["high_risk"]:
-            st.warning("Above the high-risk threshold (about the top 10% in validation).")
+            st.warning(text["high"])
         else:
-            st.success("Below the high-risk threshold (about the top 10% in validation).")
-        st.write(result["summary"])
-        st.caption(
-            "Educational estimate from historical US data (1999-2008). The model separates "
-            "patients only modestly (AUC-ROC about 0.68) and ranks groups better than "
-            "individuals: use it to explore, not to decide."
-        )
+            st.success(text["low"])
+        st.write(i18n.summary(lang, result))
+        st.caption(text["disclaimer"])
 
 
 main()

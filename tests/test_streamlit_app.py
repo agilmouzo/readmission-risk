@@ -21,6 +21,36 @@ def test_demo_shows_a_prediction(real_like_artifact, tmp_path, monkeypatch):
     assert app.metric[0].value.endswith("%")
 
 
+def _app(real_like_artifact, tmp_path, monkeypatch):
+    path = tmp_path / "model.joblib"
+    joblib.dump(real_like_artifact, path)
+    monkeypatch.setattr(config, "MODEL_PATH", path)
+    return AppTest.from_file(APP, default_timeout=60).run()
+
+
+def test_demo_works_in_spanish_and_keeps_the_values(real_like_artifact, tmp_path, monkeypatch):
+    app = _app(real_like_artifact, tmp_path, monkeypatch)
+    app.number_input(key="inpatient").set_value(4).run()
+    changed = app.metric[0].value
+    app.radio(key="lang").set_value("es").run()
+    assert not app.exception
+    assert "reingreso" in app.metric[0].label.lower()
+    assert app.number_input(key="inpatient").value == 4  # the language does not reset the form
+    assert app.metric[0].value == changed.replace(".", ",")  # same number, Spanish decimals
+    assert any("umbral de alto riesgo" in m.value for m in app.markdown)
+
+
+def test_demo_shows_the_diagnosis_group_and_flags_bad_codes(
+    real_like_artifact, tmp_path, monkeypatch
+):
+    app = _app(real_like_artifact, tmp_path, monkeypatch)
+    captions = [c.value for c in app.caption]
+    assert "Group: Circulatory" in captions  # 428
+    assert "Group: Diabetes" in captions  # 250
+    app.text_input(key="diag_1").set_value("hello").run()
+    assert any("does not look like an ICD-9" in c.value for c in app.caption)
+
+
 def test_demo_explains_a_missing_model(tmp_path, monkeypatch):
     def fail(*args, **kwargs):
         raise OSError("offline")
