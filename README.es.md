@@ -87,7 +87,9 @@ entrenamiento, de modo que el servicio no puede desviarse del modelo.
 | `reports/` | todos los resultados en CSV, más las figuras que se muestran abajo |
 | `app/` | la demo de Streamlit |
 | `scripts/` | descarga de los datos y del modelo entrenado |
+| `MODEL_CARD.md` | la [ficha del modelo](MODEL_CARD.md) (en inglés): para qué sirve, sus datos, resultados y límites |
 | `tests/` | tests unitarios, un test de equivalencia API frente a lote y un contrato de variables congelado |
+| `MODEL_CARD.md` | para qué sirve el modelo, qué tal funciona y dónde no debe usarse (en inglés) |
 
 ## Resultados
 ### Comparación de modelos (validación cruzada sobre el conjunto de entrenamiento)
@@ -209,7 +211,8 @@ curl -s localhost:8000/predict -H "Content-Type: application/json" -d '{
 (0.1971) se fijó con predicciones de validación sobre el conjunto de entrenamiento para que marque
 aproximadamente al 10 % de los pacientes; en el conjunto de test marca el 9,7 %, y en otra población
 podría marcar una proporción distinta. Las altas por fallecimiento o a cuidados paliativos (hospice) quedan fuera del
-alcance del modelo y reciben un HTTP 422 claro en lugar de una probabilidad.
+alcance del modelo y reciben un HTTP 422 claro en lugar de una probabilidad. `GET /health` indica qué archivo de modelo está cargado:
+su versión (`v0.1.0` si es el publicado, `custom` si no) y su SHA-256.
 
 **Docker.** La imagen solo contiene lo necesario para servir el modelo (sin SHAP ni gráficos).
 Copia el modelo entrenado, así que consíguelo antes con `python scripts/download_model.py` (o

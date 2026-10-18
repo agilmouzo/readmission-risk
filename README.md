@@ -81,7 +81,9 @@ so serving cannot drift from the model.
 | `reports/` | every result as CSV, plus the figures shown below |
 | `app/` | the Streamlit demo |
 | `scripts/` | download of the data and of the trained model |
+| `MODEL_CARD.md` | the [model card](MODEL_CARD.md): what the model is for, its data, results and limits |
 | `tests/` | unit tests, an API-vs-batch equivalence test and a frozen feature contract |
+| `MODEL_CARD.md` | what the model is for, how well it works and where not to use it |
 
 ## Results
 ### Model comparison (cross-validation on the training set)
@@ -197,7 +199,8 @@ curl -s localhost:8000/predict -H "Content-Type: application/json" -d '{
 `high_risk` means the predicted probability is above the high-risk threshold. That threshold
 (0.1971) was set on training-set validation predictions so that it flags about 10% of patients; on
 the test set it flags 9.7%, and on a different population it could flag a different share. Discharges to death or hospice are outside the model's scope and get a clear
-HTTP 422 instead of a probability.
+HTTP 422 instead of a probability. `GET /health` reports which model file is loaded: its
+release (`v0.1.0` if it is the published one, `custom` otherwise) and its SHA-256.
 
 **Docker.** The image only contains what serving needs (no SHAP, no plotting). It copies the
 trained model, so get it first with `python scripts/download_model.py` (or train it).
