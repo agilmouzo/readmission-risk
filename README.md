@@ -81,9 +81,8 @@ so serving cannot drift from the model.
 | `reports/` | every result as CSV, plus the figures shown below |
 | `app/` | the Streamlit demo |
 | `scripts/` | download of the data and of the trained model |
-| `MODEL_CARD.md` | the [model card](MODEL_CARD.md): what the model is for, its data, results and limits |
 | `tests/` | unit tests, an API-vs-batch equivalence test and a frozen feature contract |
-| `MODEL_CARD.md` | what the model is for, how well it works and where not to use it |
+| `MODEL_CARD.md` | the [model card](MODEL_CARD.md): what the model is for, its data, results and limits |
 
 ## Results
 ### Model comparison (cross-validation on the training set)
