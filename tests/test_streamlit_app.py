@@ -40,6 +40,18 @@ def test_demo_works_in_spanish_and_keeps_the_values(real_like_artifact, tmp_path
     assert any("umbral de alto riesgo" in m.value for m in app.markdown)
 
 
+def test_dropdown_values_survive_a_language_change(real_like_artifact, tmp_path, monkeypatch):
+    app = _app(real_like_artifact, tmp_path, monkeypatch)
+    app.selectbox(key="gender_en").set_value("Male").run()
+    app.radio(key="lang").set_value("es").run()
+    assert not app.exception
+    assert app.selectbox(key="gender_es").value == "Male"
+    assert "Hombre" in app.selectbox(key="gender_es").options
+    assert app.selectbox(key="admission_type_es").options[0] == "1 - Urgencia"
+    app.radio(key="lang").set_value("en").run()
+    assert app.selectbox(key="gender_en").value == "Male"
+
+
 def test_demo_shows_the_diagnosis_group_and_flags_bad_codes(
     real_like_artifact, tmp_path, monkeypatch
 ):

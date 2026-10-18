@@ -47,17 +47,39 @@ def get_model(path: str) -> dict:
     return load_artifact(target)
 
 
+def pick(box, label: str, options: list, key: str, lang: str, default, **kwargs):
+    """Drop-down that keeps its value when the language changes.
+
+    The widget key includes the language, so Streamlit redraws the selected text in the new
+    language (with a fixed key it kept showing the old one). The value lives in `value_<key>`.
+    """
+    stored = st.session_state.get(f"value_{key}", default)
+    if stored not in options:
+        stored = default
+    value = box.selectbox(
+        label, options, index=options.index(stored), key=f"{key}_{lang}", **kwargs
+    )
+    st.session_state[f"value_{key}"] = value
+    return value
+
+
 def code_select(
-    label: str, table: dict[int, str], default: int, key: str, exclude=(), help: str | None = None
+    label: str,
+    table: dict[int, str],
+    default: int,
+    key: str,
+    lang: str,
+    exclude=(),
 ) -> int:
     options = [code for code in table if code not in exclude]
-    return st.selectbox(
+    return pick(
+        st,
         label,
         options,
-        index=options.index(default),
+        key,
+        lang,
+        default,
         format_func=lambda code: f"{code} - {table[code]}",
-        key=key,
-        help=help,
     )
 
 
@@ -103,23 +125,31 @@ def main() -> None:
         st.subheader(text["encounter"])
         a, b = st.columns(2)
         age = a.number_input(text["age"], 0, 120, EXAMPLE["age"], key="age")
-        gender = b.selectbox(
+        gender = pick(
+            b,
             text["gender"],
             ["Female", "Male"],
+            "gender",
+            lang,
+            "Female",
             format_func=lambda v: text[f"gender_{v}"],
-            key="gender",
         )
         admission_type = code_select(
-            text["admission_type"], i18n.code_labels(lang, "admission_type"), 1, "admission_type"
+            text["admission_type"],
+            i18n.code_labels(lang, "admission_type"),
+            1,
+            "admission_type",
+            lang,
         )
         admission_source = code_select(
-            text["admission_source"], i18n.code_labels(lang, "source"), 7, "admission_source"
+            text["admission_source"], i18n.code_labels(lang, "source"), 7, "admission_source", lang
         )
         discharge = code_select(
             text["discharge"],
             i18n.code_labels(lang, "discharge"),
             1,
             "discharge",
+            lang,
             exclude=schema.EXCLUDED_DISCHARGE_CODES,
         )
         st.caption(text["discharge_note"])
@@ -204,72 +234,93 @@ def main() -> None:
 
         st.markdown(text["tests_title"])
         c1, c2 = st.columns(2)
-        a1c = c1.selectbox(
+        a1c = pick(
+            c1,
             text["a1c"],
             ["None", "Norm", ">7", ">8"],
-            index=3,
+            "a1c",
+            lang,
+            ">8",
             format_func=lambda v: {
                 "None": text["not_measured"],
                 "Norm": text["normal"],
             }.get(v, v),
-            key="a1c",
             help=text["a1c_help"],
         )
-        glucose = c2.selectbox(
+        glucose = pick(
+            c2,
             text["glucose"],
             ["None", "Norm", ">200", ">300"],
+            "glucose",
+            lang,
+            "None",
             format_func=lambda v: {
                 "None": text["not_measured"],
                 "Norm": text["normal"],
             }.get(v, v),
-            key="glucose",
             help=text["glucose_help"],
         )
         c1, c2 = st.columns(2)
-        diabetes_med = c1.selectbox(
+        diabetes_med = pick(
+            c1,
             text["diabetes_med"],
             ["Yes", "No"],
+            "diabetes_med",
+            lang,
+            "Yes",
             format_func=lambda v: text[v.lower()],
-            key="diabetes_med",
         )
-        change = c2.selectbox(
+        change = pick(
+            c2,
             text["change"],
             ["Ch", "No"],
+            "change",
+            lang,
+            "Ch",
             format_func=lambda v: {"Ch": text["yes"], "No": text["no"]}[v],
-            key="change",
             help=text["change_help"],
         )
         c1, c2 = st.columns(2)
-        insulin = c1.selectbox(
+        insulin = pick(
+            c1,
             text["insulin"],
             DRUGS,
-            index=1,
+            "insulin",
+            lang,
+            "Steady",
             format_func=lambda v: text[f"drug_{v}"],
-            key="insulin",
             help=text["drug_help"],
         )
-        metformin = c2.selectbox(
+        metformin = pick(
+            c2,
             text["metformin"],
             DRUGS,
-            index=1,
+            "metformin",
+            lang,
+            "Steady",
             format_func=lambda v: text[f"drug_{v}"],
-            key="metformin",
             help=text["drug_help"],
         )
         other = {}
         with st.expander(text["other_drugs"]):
             for name in OTHER_DRUGS:
-                other[name] = st.selectbox(
+                other[name] = pick(
+                    st,
                     i18n.DRUGS_ES[name] if es else name,
                     DRUGS,
+                    name,
+                    lang,
+                    "No",
                     format_func=lambda v: text[f"drug_{v}"],
-                    key=name,
                 )
         with st.expander(text["insurance_title"]):
-            payer = st.selectbox(
+            payer = pick(
+                st,
                 text["payer"],
                 [None, *i18n.PAYERS],
-                index=list(i18n.PAYERS).index(EXAMPLE["payer_code"]) + 1,
+                "payer",
+                lang,
+                EXAMPLE["payer_code"],
                 format_func=lambda v: (
                     text["not_recorded"]
                     if v is None
@@ -277,16 +328,17 @@ def main() -> None:
                     if i18n.PAYERS[v][es] == v
                     else f"{v} - {i18n.PAYERS[v][es]}"
                 ),
-                key="payer",
                 help=text["payer_help"],
             )
             names = {value: (en_name, es_name)[es] for value, en_name, es_name in i18n.SPECIALTIES}
-            specialty = st.selectbox(
+            specialty = pick(
+                st,
                 text["specialty"],
                 [None, *names],
-                index=list(names).index(EXAMPLE["medical_specialty"]) + 1,
+                "specialty",
+                lang,
+                EXAMPLE["medical_specialty"],
                 format_func=lambda v: text["not_recorded"] if v is None else names[v],
-                key="specialty",
                 help=text["specialty_help"],
             )
 
