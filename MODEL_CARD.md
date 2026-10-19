@@ -1,5 +1,7 @@
 # Model card: 30-day readmission risk for diabetic patients
 
+**English** | [Español](MODEL_CARD.es.md)
+
 This card summarises what the model is, what it was trained on, how well it works and where it
 must not be used. It follows the idea of a "model card": a short, honest description that travels
 with the model. Details and figures are in the [README](README.md) and in `reports/`.
@@ -22,8 +24,8 @@ with the model. Details and figures are in the [README](README.md) and in `repor
   groups), HbA1c and glucose results, diabetes medication, insurance type and medical specialty.
 - **Output:** a probability between 0 and 1, and a flag `high_risk` that is true when the
   probability is above a fixed threshold (0.1971).
-- **Owner:** Antonio Gil Mouzo, the author of the repository (GitHub: agilmouzo).
-  Personal portfolio project, MIT licence.
+- **Owner:** the author of the repository (GitHub: agilmouzo). Personal portfolio project, MIT
+  licence.
 
 ## Intended use
 - **In scope:** learning, demonstration, and discussion of how to build, evaluate, explain and
