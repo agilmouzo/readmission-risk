@@ -66,16 +66,17 @@ Si la descarga desde UCI está bloqueada, descarga el zip desde la página del d
 
 ## Cómo funciona
 ```mermaid
+%%{init: {"flowchart": {"htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 40}}}%%
 flowchart LR
-    A[UCI dataset<br/>101,766 stays] --> B[Cleaning and features<br/>prepare]
-    B --> C[Split by patient<br/>train / test]
-    C --> D[Cross-validation by patient<br/>baseline vs LightGBM]
-    D --> E[models/model.joblib]
-    C --> F[Evaluation on the test set<br/>reports/]
+    A["Dataset UCI<br/>101.766 estancias"] --> B["Limpieza y<br/>variables (prepare)"]
+    B --> C["División por paciente<br/>train / test"]
+    C --> D["Validación cruzada<br/>base vs LightGBM"]
+    D --> E["models/<br/>model.joblib"]
+    C --> F["Evaluación en test<br/>(reports/)"]
     E --> F
-    E --> G[SHAP explanations]
-    E --> H[Prediction API<br/>FastAPI + Docker]
-    E --> I[Web demo<br/>Streamlit]
+    E --> G["Explicaciones<br/>SHAP"]
+    E --> H["API de predicción<br/>FastAPI + Docker"]
+    E --> I["Demo web<br/>Streamlit"]
 ```
 La API y la demo llaman a la misma función `prepare` y a la misma selección de columnas que el
 entrenamiento, de modo que el servicio no puede desviarse del modelo.

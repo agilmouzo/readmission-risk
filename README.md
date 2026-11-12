@@ -60,16 +60,17 @@ If the UCI download is blocked, get the zip from the dataset page and extract it
 
 ## How it works
 ```mermaid
+%%{init: {"flowchart": {"htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 40}}}%%
 flowchart LR
-    A[UCI dataset<br/>101,766 stays] --> B[Cleaning and features<br/>prepare]
-    B --> C[Split by patient<br/>train / test]
-    C --> D[Cross-validation by patient<br/>baseline vs LightGBM]
-    D --> E[models/model.joblib]
-    C --> F[Evaluation on the test set<br/>reports/]
+    A["UCI dataset<br/>101,766 stays"] --> B["Cleaning and<br/>features (prepare)"]
+    B --> C["Split by patient<br/>train / test"]
+    C --> D["Cross-validation<br/>baseline vs LightGBM"]
+    D --> E["models/<br/>model.joblib"]
+    C --> F["Test-set evaluation<br/>(reports/)"]
     E --> F
-    E --> G[SHAP explanations]
-    E --> H[Prediction API<br/>FastAPI + Docker]
-    E --> I[Web demo<br/>Streamlit]
+    E --> G["SHAP<br/>explanations"]
+    E --> H["Prediction API<br/>FastAPI + Docker"]
+    E --> I["Web demo<br/>Streamlit"]
 ```
 The API and the demo call the same `prepare` function and the same column selection as training,
 so serving cannot drift from the model.
