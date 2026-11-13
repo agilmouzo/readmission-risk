@@ -60,16 +60,16 @@ If the UCI download is blocked, get the zip from the dataset page and extract it
 
 ## How it works
 ```mermaid
-%%{init: {"flowchart": {"htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 40}}}%%
+%%{init: {"flowchart": {"htmlLabels": false, "padding": 24, "nodeSpacing": 30, "rankSpacing": 40}}}%%
 flowchart LR
-    A["UCI dataset<br/>101,766 stays"] --> B["Cleaning and<br/>features (prepare)"]
+    A["UCI dataset<br/>101,766 stays"] --> B["Cleaning<br/>and features"]
     B --> C["Split by patient<br/>train / test"]
-    C --> D["Cross-validation<br/>baseline vs LightGBM"]
+    C --> D["Cross-validation<br/>baseline<br/>vs LightGBM"]
     D --> E["models/<br/>model.joblib"]
-    C --> F["Test-set evaluation<br/>(reports/)"]
+    C --> F["Test<br/>evaluation"]
     E --> F
     E --> G["SHAP<br/>explanations"]
-    E --> H["Prediction API<br/>FastAPI + Docker"]
+    E --> H["Prediction API<br/>FastAPI, Docker"]
     E --> I["Web demo<br/>Streamlit"]
 ```
 The API and the demo call the same `prepare` function and the same column selection as training,

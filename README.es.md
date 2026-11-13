@@ -66,16 +66,16 @@ Si la descarga desde UCI está bloqueada, descarga el zip desde la página del d
 
 ## Cómo funciona
 ```mermaid
-%%{init: {"flowchart": {"htmlLabels": false, "nodeSpacing": 30, "rankSpacing": 40}}}%%
+%%{init: {"flowchart": {"htmlLabels": false, "padding": 24, "nodeSpacing": 30, "rankSpacing": 40}}}%%
 flowchart LR
-    A["Dataset UCI<br/>101.766 estancias"] --> B["Limpieza y<br/>variables (prepare)"]
-    B --> C["División por paciente<br/>train / test"]
-    C --> D["Validación cruzada<br/>base vs LightGBM"]
+    A["Dataset UCI<br/>101.766 estancias"] --> B["Limpieza<br/>y variables"]
+    B --> C["División por<br/>paciente<br/>train / test"]
+    C --> D["Validación<br/>cruzada<br/>base vs LightGBM"]
     D --> E["models/<br/>model.joblib"]
-    C --> F["Evaluación en test<br/>(reports/)"]
+    C --> F["Evaluación<br/>en test"]
     E --> F
     E --> G["Explicaciones<br/>SHAP"]
-    E --> H["API de predicción<br/>FastAPI + Docker"]
+    E --> H["API de<br/>predicción<br/>FastAPI, Docker"]
     E --> I["Demo web<br/>Streamlit"]
 ```
 La API y la demo llaman a la misma función `prepare` y a la misma selección de columnas que el
