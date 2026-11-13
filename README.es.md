@@ -42,9 +42,9 @@ un minuto. Está disponible en español e inglés.)
 git clone https://github.com/agilmouzo/readmission-risk.git && cd readmission-risk
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[demo]"
-python scripts/download_model.py                 # saves models/model.joblib (under 1 MB)
-streamlit run app/streamlit_app.py               # the web demo
-uvicorn readmission.api:create_app --factory     # or the API, with docs at http://127.0.0.1:8000/docs
+python scripts/download_model.py                 # guarda models/model.joblib (menos de 1 MB)
+streamlit run app/streamlit_app.py               # la demo web
+uvicorn readmission.api:create_app --factory     # o la API, con documentación en http://127.0.0.1:8000/docs
 ```
 La API tiene su propia página interactiva de documentación. Cada campo tiene una descripción y hay
 un ejemplo ya rellenado, así que puedes probarla sin conocer el dataset:
@@ -55,11 +55,12 @@ un ejemplo ya rellenado, así que puedes probarla sin conocer el dataset:
 **Reproduce todo a partir de los datos originales:**
 ```bash
 pip install -e ".[dev]"
-python scripts/download_data.py                  # downloads the dataset from UCI into data/raw/
+python scripts/download_data.py                  # descarga el dataset de UCI en data/raw/
 pytest                                           # 133 tests
-python -m readmission.train                      # patient-level CV, saves models/model.joblib
-python -m readmission.evaluate                   # opens the test set ONCE; tables and figures in reports/
-python -m readmission.explain                    # SHAP explanations on a training sample
+python -m readmission.train                      # validación cruzada por paciente, guarda models/model.joblib
+python -m readmission.evaluate                   # abre el test UNA sola vez; tablas y figuras en reports/
+python -m readmission.explain                    # explicaciones SHAP sobre una muestra de entrenamiento
+python -m readmission.hospital_value             # tablas de ahorro neto de la sección de uso hospitalario
 ```
 Si la descarga desde UCI está bloqueada, descarga el zip desde la página del dataset y extráelo en
 `data/raw/`.
@@ -124,20 +125,22 @@ entrenamiento):
 
 En lenguaje llano: marcar el 10 % de mayor riesgo encuentra aproximadamente uno de cada cuatro
 reingresos, y unos 3 de cada 10 pacientes marcados vuelven de verdad. Marcar más pacientes encuentra
-más reingresos (47 %), pero la mayoría de las marcas (80 %) son falsas alarmas.
+más reingresos (47 %), pero la mayoría de las marcas (80 %) son falsas alarmas. (La precisión del
+28,6 % de la regla por umbral y el 28,5 % del primer decil difieren un poco porque el umbral marca
+al 9,7 % de los pacientes, no exactamente al 10 %.)
 
 La calibración es buena (pendiente 1,06, error de calibración esperado 0,007): un riesgo predicho
-del 20 % corresponde a que aproximadamente el 20 % de esos pacientes reingrese. Esto vale para el grupo en
-conjunto: no significa que la cifra de un paciente concreto sea igual de precisa. El modelo separa a
+del 20 % corresponde a que aproximadamente el 20 % de esos pacientes reingrese. Esto vale para el
+grupo en conjunto: no significa que la cifra de un paciente concreto sea igual de precisa. El modelo separa a
 los pacientes solo de forma modesta, así que una estimación individual puede quedar lejos de lo que
 le ocurra a esa persona.
 
-**Subgrupos.** (Una diferencia de AUC por sí sola no demuestra trato injusto ni su ausencia; con pocos
-casos la incertidumbre es grande.) No hay diferencia relevante por género ni entre los dos grupos grandes de raza
+**Subgrupos.** No hay diferencia relevante por género ni entre los dos grupos grandes de raza
 (afroamericanos: AUC-ROC 0,667 frente a caucásicos: 0,675, con intervalos que se solapan); los
 grupos de raza más pequeños tienen muy pocos casos para sacar conclusiones. La discriminación es
-claramente menor en pacientes de 80 años o más (0,632) que en menores de 40 (0,777). Las tablas
-completas están en `reports/`.
+claramente menor en pacientes de 80 años o más (0,632) que en menores de 40 (0,777). Una diferencia
+de AUC por sí sola no demuestra un trato injusto, ni su ausencia lo descarta, y con pocos casos la
+incertidumbre es grande. Las tablas completas están en `reports/`.
 
 ![Curva precisión-recall](reports/figures/evaluation/pr_curve.png)
 ![Calibración](reports/figures/evaluation/calibration.png)
@@ -181,12 +184,13 @@ resultado de este proyecto):
 - *Coste de la intervención, c = 300.* Un programa de transición asistencial (una visita en el
   hospital, una visita a domicilio y llamadas de seguimiento) costó 298 por paciente en un estudio
   con 321 pacientes de Medicare ([Care Transitions Intervention](https://pmc.ncbi.nlm.nih.gov/articles/PMC4026506)).
-  También muestro 100, 1.000 y 3.000.
+  Las tablas siguientes también usan 100, 1.000 y 3.000.
 - *Efecto, e = 20 %.* Los programas completos redujeron la tasa de reingreso de cerca del 22 % al
   15 % en una [revisión de estudios de EE. UU.](https://www.wsipp.wa.gov/ReportFile/1587/Wsipp_Reducing-Hospital-Readmissions-A-Review-of-the-Evidence_Report.pdf)
-  (alrededor de un 30 % menos), mientras que un [metaanálisis de 2025 sobre llamadas breves tras el alta](https://www.healthday.com/healthpro-news/postdischarge-contacts-do-not-reduce-30-day-ed-visits-readmissions)
-  no encontró un efecto significativo en los reingresos a 30 días. Tomo un 20 % como valor
-  intermedio prudente y muestro también 10 % y 30 %.
+  (alrededor de un 30 % menos), mientras que un metaanálisis de 2025 sobre llamadas breves tras el
+  alta ([resumen en prensa](https://www.healthday.com/healthpro-news/postdischarge-contacts-do-not-reduce-30-day-ed-visits-readmissions))
+  no encontró un efecto significativo en los reingresos a 30 días. Un efecto del 20 % es un valor
+  prudente entre esos dos resultados; las tablas también usan 10 % y 30 %.
 
 **Resultado con c = 300 y e = 20 %**, por cada 1.000 altas, tratando primero a los de mayor
 riesgo (conjunto de test, deciles de riesgo predicho):
@@ -199,17 +203,18 @@ riesgo (conjunto de test, deciles de riesgo predicho):
 | **40 % de mayor riesgo (el mejor)** | 400 | 71 | **94.600** |
 | A todos | 1.000 | 112 | 40.200 |
 
-Lo mejor es tratar al 40 % de mayor riesgo, cerca de la probabilidad de equilibrio de 0,099.
-Tratar a todos ahorra menos de la mitad, y esa diferencia es el valor que aporta el modelo.
+Lo mejor es tratar al 40 % de mayor riesgo: el riesgo predicho de los siguientes pacientes baja a
+alrededor de 0,10, cerca de la probabilidad de equilibrio de 0,099. Tratar a todos ahorra 40.200 en
+lugar de 94.600, así que el modelo aporta unos 54.000 por cada 1.000 altas.
 
 **Depende del coste de la intervención.** Mejor porcentaje de pacientes a tratar y ahorro neto
 (US$ por 1.000 altas):
 
 | Coste por paciente | e = 10 % | e = 20 % | e = 30 % |
 |---|---|---|---|
-| 100 | 70 % superior, 75.500 | todos, 240.200 | todos, 410.300 |
-| 300 | 10 % superior, 13.300 | 40 % superior, 94.600 | 70 % superior, 226.400 |
-| 1.000 | nadie | nadie | 10 % superior, 29.800 |
+| 100 | 70 % de mayor riesgo, 75.500 | todos, 240.200 | todos, 410.300 |
+| 300 | 10 % de mayor riesgo, 13.300 | 40 % de mayor riesgo, 94.600 | 70 % de mayor riesgo, 226.400 |
+| 1.000 | nadie | nadie | 10 % de mayor riesgo, 29.800 |
 | 3.000 | nadie | nadie | nadie |
 
 Cuando la intervención es muy barata, tratar a todos es tan bueno como usar el modelo. Cuando es
@@ -224,9 +229,10 @@ las tablas (escribe `reports/hospital_value.csv`).
 - No cuenta los daños, el personal ni la capacidad de camas, ni cuánto dura el efecto.
 - Un reingreso en los datos es cualquier reingreso en 30 días, planificado o no, así que no todos
   se pueden evitar.
+- Los puntos de corte se leen del conjunto de test una vez fijado el modelo, así que son una
+  ilustración, no una regla de decisión ajustada y validada.
 - La clasificación de riesgo sale de datos antiguos de EE. UU. (véanse las limitaciones) y nunca
   se probó en un hospital real. Un piloto tendría que medir el efecto real.
-
 
 ## API de predicción
 Un pequeño servicio FastAPI puntúa a un paciente. La entrada usa los nombres de campo del dataset
@@ -273,11 +279,14 @@ curl -s localhost:8000/predict -H "Content-Type: application/json" -d '{
 }
 ```
 `high_risk` significa que la probabilidad predicha supera el umbral de alto riesgo. Ese umbral
-(0.1971) se fijó con predicciones de validación sobre el conjunto de entrenamiento para que marque
+(0,1971) se fijó con predicciones de validación sobre el conjunto de entrenamiento para que marque
 aproximadamente al 10 % de los pacientes; en el conjunto de test marca el 9,7 %, y en otra población
-podría marcar una proporción distinta. Las altas por fallecimiento o a cuidados paliativos (hospice) quedan fuera del
-alcance del modelo y reciben un HTTP 422 claro en lugar de una probabilidad. `GET /health` indica qué archivo de modelo está cargado:
-su versión (`v0.1.0` si es el publicado, `custom` si no) y su SHA-256.
+podría marcar una proporción distinta.
+
+Las altas por fallecimiento o a cuidados paliativos (hospice) quedan fuera del alcance del modelo y
+reciben un HTTP 422 claro en lugar de una probabilidad. `GET /health` indica qué archivo de modelo
+está cargado: su versión (`v0.1.0` si es el publicado, `custom` si no) y su SHA-256. El texto de
+`summary` se devuelve siempre en inglés.
 
 **Docker.** La imagen solo contiene lo necesario para servir el modelo (sin SHAP ni gráficos).
 Copia el modelo entrenado, así que consíguelo antes con `python scripts/download_model.py` (o
@@ -285,7 +294,7 @@ entrénalo). `constraints.txt` está versionado y fija las versiones de las libr
 guardó el modelo; regéneralo solo si reentrenas en un entorno nuevo.
 ```bash
 docker build -t readmission-api .
-docker run --rm -p 8000:8000 readmission-api     # docs at http://127.0.0.1:8000/docs
+docker run --rm -p 8000:8000 readmission-api     # documentación en http://127.0.0.1:8000/docs
 ```
 
 ## Decisiones de diseño

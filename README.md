@@ -55,6 +55,7 @@ pytest                                           # 133 tests
 python -m readmission.train                      # patient-level CV, saves models/model.joblib
 python -m readmission.evaluate                   # opens the test set ONCE; tables and figures in reports/
 python -m readmission.explain                    # SHAP explanations on a training sample
+python -m readmission.hospital_value             # net-saving tables of the hospital-use section
 ```
 If the UCI download is blocked, get the zip from the dataset page and extract it into `data/raw/`.
 
@@ -117,18 +118,19 @@ Operating points (thresholds chosen on out-of-fold predictions over the training
 
 In plain words: flagging the top 10% finds about one readmission in four, and about 3 of every 10
 flagged patients really come back. Flagging more patients finds more readmissions (47%) but most
-flags (80%) are false alarms.
+flags (80%) are false alarms. (The 28.6% precision of the threshold rule and the 28.5% of the
+top decile differ slightly because the threshold flags 9.7% of patients, not exactly 10%.)
 
 Calibration is good (slope 1.06, expected calibration error 0.007): a predicted 20% risk
 corresponds to about 20% of those patients being readmitted. That holds for the group as a
 whole: it does not mean the figure for one patient is equally precise. The model separates
 patients only modestly, so an individual estimate can be far from what happens to that person.
 
-**Subgroups.** (An AUC gap alone does not prove unfair treatment or its absence; with few
-cases the uncertainty is large.) No meaningful difference by gender or between the two large race groups
+**Subgroups.** There is no meaningful difference by gender or between the two large race groups
 (African American AUC-ROC 0.667 vs. Caucasian 0.675, overlapping intervals); smaller race groups
 have too few cases to conclude anything. Discrimination is clearly lower in patients aged 80+
-(0.632) than under 40 (0.777). Full tables are in `reports/`.
+(0.632) than under 40 (0.777). An AUC gap alone does not prove unfair treatment, nor does its
+absence rule it out, and with few cases the uncertainty is large. Full tables are in `reports/`.
 
 ![Precision-recall curve](reports/figures/evaluation/pr_curve.png)
 ![Calibration](reports/figures/evaluation/calibration.png)
@@ -167,55 +169,58 @@ project):
 - *Cost of a readmission, R = 15,200.* Mean cost of a 30-day readmission for endocrine and
   metabolic conditions in the US in 2020 ([AHRQ HCUP Statistical Brief #304](https://hcup-us.ahrq.gov/reports/statbriefs/sb304-readmissions-2016-2020.pdf)).
   The figure for all conditions is 16,300.
-- *Cost of the intervention, c = 300.* A transitional care programme (a hospital visit, a home
+- *Cost of the intervention, c = 300.* A transitional care program (a hospital visit, a home
   visit and follow-up calls) cost 298 per patient in a study of 321 Medicare patients
-  ([Care Transitions Intervention](https://pmc.ncbi.nlm.nih.gov/articles/PMC4026506)). I also
-  show 100, 1,000 and 3,000.
-- *Effect, e = 20 %.* Comprehensive programmes cut the readmission rate from about 22 % to 15 %
+  ([Care Transitions Intervention](https://pmc.ncbi.nlm.nih.gov/articles/PMC4026506)). The
+  tables below also use 100, 1,000 and 3,000.
+- *Effect, e = 20%.* Comprehensive programs cut the readmission rate from about 22% to 15%
   in a [review of US studies](https://www.wsipp.wa.gov/ReportFile/1587/Wsipp_Reducing-Hospital-Readmissions-A-Review-of-the-Evidence_Report.pdf)
-  (about 30 % fewer), while a 2025 [meta-analysis of brief post-discharge calls](https://www.healthday.com/healthpro-news/postdischarge-contacts-do-not-reduce-30-day-ed-visits-readmissions)
-  found no significant effect on 30-day readmissions. I take 20 % as a cautious middle value and
-  show 10 % and 30 %.
+  (about 30% fewer), while a 2025 meta-analysis of brief post-discharge calls
+  ([news summary](https://www.healthday.com/healthpro-news/postdischarge-contacts-do-not-reduce-30-day-ed-visits-readmissions))
+  found no significant effect on 30-day readmissions. A 20% effect is a cautious value between
+  those two results; the tables also use 10% and 30%.
 
-**Result with c = 300 and e = 20 %**, per 1,000 discharges, treating the highest-risk patients
+**Result with c = 300 and e = 20%**, per 1,000 discharges, treating the highest-risk patients
 first (test set, deciles of predicted risk):
 
 | Who is treated | Patients treated | Readmissions among them | Net saving (US$) |
 |---|---|---|---|
 | Nobody | 0 | 0 | 0 |
-| Top 10 % of risk | 100 | 28 | 56,600 |
-| Top 20 % | 200 | 45 | 75,800 |
-| **Top 40 % (best)** | 400 | 71 | **94,600** |
+| Top 10% of risk | 100 | 28 | 56,600 |
+| Top 20% | 200 | 45 | 75,800 |
+| **Top 40% (best)** | 400 | 71 | **94,600** |
 | Everybody | 1,000 | 112 | 40,200 |
 
-The best choice is to treat the 40 % at highest risk, close to the break-even probability of
-0.099. Treating everybody saves less than half as much, which is the value the model adds.
+The best choice is to treat the 40% at highest risk: the predicted risk of the next patients
+falls to about 0.10, close to the break-even probability of 0.099. Treating everybody saves
+40,200 instead of 94,600, so the model adds about 54,000 per 1,000 discharges.
 
 **It depends on the cost of the intervention.** Best share of patients to treat and net saving
 (US$ per 1,000 discharges):
 
-| Cost per patient | e = 10 % | e = 20 % | e = 30 % |
+| Cost per patient | e = 10% | e = 20% | e = 30% |
 |---|---|---|---|
-| 100 | top 70 %, 75,500 | everybody, 240,200 | everybody, 410,300 |
-| 300 | top 10 %, 13,300 | top 40 %, 94,600 | top 70 %, 226,400 |
-| 1,000 | nobody | nobody | top 10 %, 29,800 |
+| 100 | top 70%, 75,500 | everybody, 240,200 | everybody, 410,300 |
+| 300 | top 10%, 13,300 | top 40%, 94,600 | top 70%, 226,400 |
+| 1,000 | nobody | nobody | top 10%, 29,800 |
 | 3,000 | nobody | nobody | nobody |
 
 When the intervention is very cheap, treating everybody is as good as using the model. When it is
 very expensive, almost nothing pays off. The model helps in between, which is also where
-intensive programmes usually sit. Run `python -m readmission.hospital_value` to reproduce the
+intensive programs usually sit. Run `python -m readmission.hospital_value` to reproduce the
 tables (it writes `reports/hospital_value.csv`).
 
 **What this does not show.**
 - The costs are American and from a few studies; Spanish costs would differ.
-- The effect is assumed equal for every risk level. A real programme could work better or worse
+- The effect is assumed equal for every risk level. A real program could work better or worse
   in the patients the model flags.
 - It ignores harms, staff and bed capacity, and how long the effect lasts.
 - A readmission in the data is any readmission within 30 days, planned or not, so not all of
   them can be prevented.
+- The cut-offs are read from the test set after the model was fixed, so they are an
+  illustration, not a tuned and validated decision rule.
 - The risk ranking comes from old US data (see Limitations) and was never tested in a real
   hospital. A pilot would have to measure the actual effect.
-
 
 ## Prediction API
 A small FastAPI service scores one patient. The input uses the field names of the original
@@ -262,9 +267,11 @@ curl -s localhost:8000/predict -H "Content-Type: application/json" -d '{
 ```
 `high_risk` means the predicted probability is above the high-risk threshold. That threshold
 (0.1971) was set on training-set validation predictions so that it flags about 10% of patients; on
-the test set it flags 9.7%, and on a different population it could flag a different share. Discharges to death or hospice are outside the model's scope and get a clear
-HTTP 422 instead of a probability. `GET /health` reports which model file is loaded: its
-release (`v0.1.0` if it is the published one, `custom` otherwise) and its SHA-256.
+the test set it flags 9.7%, and on a different population it could flag a different share.
+
+Discharges to death or hospice are outside the model's scope and get a clear HTTP 422 instead of
+a probability. `GET /health` reports which model file is loaded: its release (`v0.1.0` if it is
+the published one, `custom` otherwise) and its SHA-256. The `summary` text is always in English.
 
 **Docker.** The image only contains what serving needs (no SHAP, no plotting). It copies the
 trained model, so get it first with `python scripts/download_model.py` (or train it).
