@@ -163,6 +163,71 @@ relativo.
 ![Efecto de las principales variables numéricas](reports/figures/shap/numeric.png)
 ![Dos pacientes de ejemplo](reports/figures/shap/patients.png)
 
+## Cómo podría usarse en un hospital
+Es una ilustración de cómo un modelo de riesgo se convierte en una decisión, no un plan de
+negocio. Un modelo no ahorra nada por sí solo: el valor depende de lo que haga el hospital con
+los pacientes que marca.
+
+**La regla.** Supongamos que una intervención cuesta `c` por paciente, evita una parte `e` de los
+reingresos a los que se dirige y un reingreso cuesta `R`. Tratar a un paciente compensa cuando su
+probabilidad de reingreso supera `c / (e × R)`. Las probabilidades del modelo están bien
+calibradas (pendiente 1,06), así que se pueden usar directamente en esta regla.
+
+**Los supuestos** (dólares estadounidenses, porque los datos son de EE. UU.; ninguno es un
+resultado de este proyecto):
+- *Coste de un reingreso, R = 15.200.* Coste medio de un reingreso a 30 días por enfermedades
+  endocrinas y metabólicas en EE. UU. en 2020 ([AHRQ HCUP Statistical Brief #304](https://hcup-us.ahrq.gov/reports/statbriefs/sb304-readmissions-2016-2020.pdf)).
+  La cifra para todas las enfermedades es 16.300.
+- *Coste de la intervención, c = 300.* Un programa de transición asistencial (una visita en el
+  hospital, una visita a domicilio y llamadas de seguimiento) costó 298 por paciente en un estudio
+  con 321 pacientes de Medicare ([Care Transitions Intervention](https://pmc.ncbi.nlm.nih.gov/articles/PMC4026506)).
+  También muestro 100, 1.000 y 3.000.
+- *Efecto, e = 20 %.* Los programas completos redujeron la tasa de reingreso de cerca del 22 % al
+  15 % en una [revisión de estudios de EE. UU.](https://www.wsipp.wa.gov/ReportFile/1587/Wsipp_Reducing-Hospital-Readmissions-A-Review-of-the-Evidence_Report.pdf)
+  (alrededor de un 30 % menos), mientras que un [metaanálisis de 2025 sobre llamadas breves tras el alta](https://www.healthday.com/healthpro-news/postdischarge-contacts-do-not-reduce-30-day-ed-visits-readmissions)
+  no encontró un efecto significativo en los reingresos a 30 días. Tomo un 20 % como valor
+  intermedio prudente y muestro también 10 % y 30 %.
+
+**Resultado con c = 300 y e = 20 %**, por cada 1.000 altas, tratando primero a los de mayor
+riesgo (conjunto de test, deciles de riesgo predicho):
+
+| A quién se trata | Pacientes tratados | Reingresos entre ellos | Ahorro neto (US$) |
+|---|---|---|---|
+| A nadie | 0 | 0 | 0 |
+| 10 % de mayor riesgo | 100 | 28 | 56.600 |
+| 20 % de mayor riesgo | 200 | 45 | 75.800 |
+| **40 % de mayor riesgo (el mejor)** | 400 | 71 | **94.600** |
+| A todos | 1.000 | 112 | 40.200 |
+
+Lo mejor es tratar al 40 % de mayor riesgo, cerca de la probabilidad de equilibrio de 0,099.
+Tratar a todos ahorra menos de la mitad, y esa diferencia es el valor que aporta el modelo.
+
+**Depende del coste de la intervención.** Mejor porcentaje de pacientes a tratar y ahorro neto
+(US$ por 1.000 altas):
+
+| Coste por paciente | e = 10 % | e = 20 % | e = 30 % |
+|---|---|---|---|
+| 100 | 70 % superior, 75.500 | todos, 240.200 | todos, 410.300 |
+| 300 | 10 % superior, 13.300 | 40 % superior, 94.600 | 70 % superior, 226.400 |
+| 1.000 | nadie | nadie | 10 % superior, 29.800 |
+| 3.000 | nadie | nadie | nadie |
+
+Cuando la intervención es muy barata, tratar a todos es tan bueno como usar el modelo. Cuando es
+muy cara, casi nada compensa. El modelo ayuda en el término medio, que es también donde suelen
+estar los programas intensivos. Ejecuta `python -m readmission.hospital_value` para reproducir
+las tablas (escribe `reports/hospital_value.csv`).
+
+**Lo que esto no demuestra.**
+- Los costes son estadounidenses y salen de pocos estudios; los costes españoles serían distintos.
+- Se supone el mismo efecto en todos los niveles de riesgo. Un programa real podría funcionar
+  mejor o peor en los pacientes que marca el modelo.
+- No cuenta los daños, el personal ni la capacidad de camas, ni cuánto dura el efecto.
+- Un reingreso en los datos es cualquier reingreso en 30 días, planificado o no, así que no todos
+  se pueden evitar.
+- La clasificación de riesgo sale de datos antiguos de EE. UU. (véanse las limitaciones) y nunca
+  se probó en un hospital real. Un piloto tendría que medir el efecto real.
+
+
 ## API de predicción
 Un pequeño servicio FastAPI puntúa a un paciente. La entrada usa los nombres de campo del dataset
 original (edad en años en lugar de un tramo); los diagnósticos, el pagador, la especialidad, los

@@ -153,6 +153,70 @@ contributions are in log-odds, so only their sign and relative size matter.
 ![Effect of the main numeric variables](reports/figures/shap/numeric.png)
 ![Two example patients](reports/figures/shap/patients.png)
 
+## How it could be used in a hospital
+This is an illustration of how a risk model turns into a decision, not a business case. A model
+saves nothing by itself: the value depends on what the hospital does with the patients it flags.
+
+**The rule.** Suppose an intervention costs `c` per patient, prevents a share `e` of the
+readmissions it targets, and a readmission costs `R`. Treating a patient pays off when their
+readmission probability is above `c / (e × R)`. The model's probabilities are well calibrated
+(slope 1.06), so they can be used directly in this rule.
+
+**The assumptions** (US dollars, because the data are American; none of them is a result of this
+project):
+- *Cost of a readmission, R = 15,200.* Mean cost of a 30-day readmission for endocrine and
+  metabolic conditions in the US in 2020 ([AHRQ HCUP Statistical Brief #304](https://hcup-us.ahrq.gov/reports/statbriefs/sb304-readmissions-2016-2020.pdf)).
+  The figure for all conditions is 16,300.
+- *Cost of the intervention, c = 300.* A transitional care programme (a hospital visit, a home
+  visit and follow-up calls) cost 298 per patient in a study of 321 Medicare patients
+  ([Care Transitions Intervention](https://pmc.ncbi.nlm.nih.gov/articles/PMC4026506)). I also
+  show 100, 1,000 and 3,000.
+- *Effect, e = 20 %.* Comprehensive programmes cut the readmission rate from about 22 % to 15 %
+  in a [review of US studies](https://www.wsipp.wa.gov/ReportFile/1587/Wsipp_Reducing-Hospital-Readmissions-A-Review-of-the-Evidence_Report.pdf)
+  (about 30 % fewer), while a 2025 [meta-analysis of brief post-discharge calls](https://www.healthday.com/healthpro-news/postdischarge-contacts-do-not-reduce-30-day-ed-visits-readmissions)
+  found no significant effect on 30-day readmissions. I take 20 % as a cautious middle value and
+  show 10 % and 30 %.
+
+**Result with c = 300 and e = 20 %**, per 1,000 discharges, treating the highest-risk patients
+first (test set, deciles of predicted risk):
+
+| Who is treated | Patients treated | Readmissions among them | Net saving (US$) |
+|---|---|---|---|
+| Nobody | 0 | 0 | 0 |
+| Top 10 % of risk | 100 | 28 | 56,600 |
+| Top 20 % | 200 | 45 | 75,800 |
+| **Top 40 % (best)** | 400 | 71 | **94,600** |
+| Everybody | 1,000 | 112 | 40,200 |
+
+The best choice is to treat the 40 % at highest risk, close to the break-even probability of
+0.099. Treating everybody saves less than half as much, which is the value the model adds.
+
+**It depends on the cost of the intervention.** Best share of patients to treat and net saving
+(US$ per 1,000 discharges):
+
+| Cost per patient | e = 10 % | e = 20 % | e = 30 % |
+|---|---|---|---|
+| 100 | top 70 %, 75,500 | everybody, 240,200 | everybody, 410,300 |
+| 300 | top 10 %, 13,300 | top 40 %, 94,600 | top 70 %, 226,400 |
+| 1,000 | nobody | nobody | top 10 %, 29,800 |
+| 3,000 | nobody | nobody | nobody |
+
+When the intervention is very cheap, treating everybody is as good as using the model. When it is
+very expensive, almost nothing pays off. The model helps in between, which is also where
+intensive programmes usually sit. Run `python -m readmission.hospital_value` to reproduce the
+tables (it writes `reports/hospital_value.csv`).
+
+**What this does not show.**
+- The costs are American and from a few studies; Spanish costs would differ.
+- The effect is assumed equal for every risk level. A real programme could work better or worse
+  in the patients the model flags.
+- It ignores harms, staff and bed capacity, and how long the effect lasts.
+- A readmission in the data is any readmission within 30 days, planned or not, so not all of
+  them can be prevented.
+- The risk ranking comes from old US data (see Limitations) and was never tested in a real
+  hospital. A pilot would have to measure the actual effect.
+
+
 ## Prediction API
 A small FastAPI service scores one patient. The input uses the field names of the original
 dataset (age in years instead of a bracket); diagnoses, payer, specialty, lab results and
