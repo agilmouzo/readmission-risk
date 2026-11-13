@@ -31,7 +31,7 @@ un minuto. Está disponible en español e inglés.)
 - **Se entrega como:** scripts reproducibles de entrenamiento y evaluación, explicaciones SHAP, un
   análisis por subgrupos, una API de predicción documentada (FastAPI + Docker) y una demo web
   (Streamlit).
-- **Calidad:** 133 tests, ruff, CI en Python 3.11 y 3.13.
+- **Calidad:** 142 tests, ruff, CI en Python 3.11 y 3.13.
 
 ## Pruébalo
 **En línea:** la [demo en vivo](https://agilmou-readmission-risk.streamlit.app/).
@@ -56,7 +56,7 @@ un ejemplo ya rellenado, así que puedes probarla sin conocer el dataset:
 ```bash
 pip install -e ".[dev]"
 python scripts/download_data.py                  # descarga el dataset de UCI en data/raw/
-pytest                                           # 133 tests
+pytest                                           # 142 tests
 python -m readmission.train                      # validación cruzada por paciente, guarda models/model.joblib
 python -m readmission.evaluate                   # abre el test UNA sola vez; tablas y figuras en reports/
 python -m readmission.explain                    # explicaciones SHAP sobre una muestra de entrenamiento

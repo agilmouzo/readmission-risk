@@ -26,7 +26,7 @@ the first load after a period of inactivity can take a minute. It is available i
   **11.2%** overall (2.5× more). Overall discrimination is modest (AUC-ROC 0.68).
 - **Delivered as:** reproducible training and evaluation scripts, SHAP explanations, a subgroup
   analysis, a documented prediction API (FastAPI + Docker) and a web demo (Streamlit).
-- **Quality:** 133 tests, ruff, CI on Python 3.11 and 3.13.
+- **Quality:** 142 tests, ruff, CI on Python 3.11 and 3.13.
 
 ## Try it
 **Online:** the [live demo](https://agilmou-readmission-risk.streamlit.app/).
@@ -51,7 +51,7 @@ pre-filled, so you can try it without knowing the dataset:
 ```bash
 pip install -e ".[dev]"
 python scripts/download_data.py                  # downloads the dataset from UCI into data/raw/
-pytest                                           # 133 tests
+pytest                                           # 142 tests
 python -m readmission.train                      # patient-level CV, saves models/model.joblib
 python -m readmission.evaluate                   # opens the test set ONCE; tables and figures in reports/
 python -m readmission.explain                    # SHAP explanations on a training sample
