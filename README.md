@@ -3,7 +3,7 @@
 **English** | [Español](README.es.md)
 
 [![CI](https://github.com/agilmouzo/readmission-risk/actions/workflows/ci.yml/badge.svg)](https://github.com/agilmouzo/readmission-risk/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Licence: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Live demo](https://img.shields.io/badge/demo-Streamlit-ff4b4b.svg)](https://agilmou-readmission-risk.streamlit.app/)
 
 > Educational project. **Not a clinical tool.**
@@ -169,11 +169,11 @@ project):
 - *Cost of a readmission, R = 15,200.* Mean cost of a 30-day readmission for endocrine and
   metabolic conditions in the US in 2020 ([AHRQ HCUP Statistical Brief #304](https://hcup-us.ahrq.gov/reports/statbriefs/sb304-readmissions-2016-2020.pdf)).
   The figure for all conditions is 16,300.
-- *Cost of the intervention, c = 300.* A transitional care program (a hospital visit, a home
+- *Cost of the intervention, c = 300.* A transitional care programme (a hospital visit, a home
   visit and follow-up calls) cost 298 per patient in a study of 321 Medicare patients
   ([Care Transitions Intervention](https://pmc.ncbi.nlm.nih.gov/articles/PMC4026506)). The
   tables below also use 100, 1,000 and 3,000.
-- *Effect, e = 20%.* Comprehensive programs cut the readmission rate from about 22% to 15%
+- *Effect, e = 20%.* Comprehensive programmes cut the readmission rate from about 22% to 15%
   in a [review of US studies](https://www.wsipp.wa.gov/ReportFile/1587/Wsipp_Reducing-Hospital-Readmissions-A-Review-of-the-Evidence_Report.pdf)
   (about 30% fewer), while a 2025 meta-analysis of brief post-discharge calls
   ([news summary](https://www.healthday.com/healthpro-news/postdischarge-contacts-do-not-reduce-30-day-ed-visits-readmissions))
@@ -207,12 +207,12 @@ falls to about 0.10, close to the break-even probability of 0.099. Treating ever
 
 When the intervention is very cheap, treating everybody is as good as using the model. When it is
 very expensive, almost nothing pays off. The model helps in between, which is also where
-intensive programs usually sit. Run `python -m readmission.hospital_value` to reproduce the
+intensive programmes usually sit. Run `python -m readmission.hospital_value` to reproduce the
 tables (it writes `reports/hospital_value.csv`).
 
 **What this does not show.**
 - The costs are American and from a few studies; Spanish costs would differ.
-- The effect is assumed equal for every risk level. A real program could work better or worse
+- The effect is assumed equal for every risk level. A real programme could work better or worse
   in the patients the model flags.
 - It ignores harms, staff and bed capacity, and how long the effect lasts.
 - A readmission in the data is any readmission within 30 days, planned or not, so not all of
@@ -313,7 +313,7 @@ docker run --rm -p 8000:8000 readmission-api     # docs at http://127.0.0.1:8000
 - **No clinical use.** The API has no authentication or rate limit and is a demonstration, not a
   hardened service.
 
-## Data and license
+## Data and licence
 Data: Clore, J., Cios, K., DeShazo, J. and Strack, B. (2014). *Diabetes 130-US Hospitals for Years
 1999-2008*. UCI Machine Learning Repository. https://doi.org/10.24432/C5230J (CC BY 4.0). It is not
 committed to this repository.
